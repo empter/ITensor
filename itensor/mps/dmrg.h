@@ -204,77 +204,243 @@ DMRGWorker(MPSt<Tensor>& psi,
     args.add("DebugLevel",debug_level);
     args.add("DoNormalize",true);
     
-    for(int sw = 1; sw <= sweeps.nsweep(); ++sw)
+    if(PH.numCenter() == 2)
         {
-        cpu_time sw_time;
-        args.add("Sweep",sw);
-        args.add("NSweep",sweeps.nsweep());
-        args.add("Cutoff",sweeps.cutoff(sw));
-        args.add("Minm",sweeps.minm(sw));
-        args.add("Maxm",sweeps.maxm(sw));
-        args.add("Noise",sweeps.noise(sw));
-        args.add("MaxIter",sweeps.niter(sw));
-
-        if(!PH.doWrite()
-           && args.defined("WriteM")
-           && sweeps.maxm(sw) >= args.getInt("WriteM"))
+        for(int sw = 1; sw <= sweeps.nsweep(); ++sw)
             {
-            if(!quiet)
+            cpu_time sw_time;
+            args.add("Sweep",sw);
+            args.add("NSweep",sweeps.nsweep());
+            args.add("Cutoff",sweeps.cutoff(sw));
+            args.add("Minm",sweeps.minm(sw));
+            args.add("Maxm",sweeps.maxm(sw));
+            args.add("Noise",sweeps.noise(sw));
+            args.add("MaxIter",sweeps.niter(sw));
+
+            if(!PH.doWrite()
+               && args.defined("WriteM")
+               && sweeps.maxm(sw) >= args.getInt("WriteM"))
                 {
-                println("\nTurning on write to disk, write_dir = ",
-                        args.getString("WriteDir","./"));
+                if(!quiet)
+                    {
+                    println("\nTurning on write to disk, write_dir = ",
+                            args.getString("WriteDir","./"));
+                    }
+
+                //psi.doWrite(true);
+                PH.doWrite(true);
                 }
-
-            //psi.doWrite(true);
-            PH.doWrite(true);
-            }
-
-        for(int b = 1, ha = 1; ha <= 2; sweepnext(b,ha,N))
-            {
-            if(!quiet)
+        
+            for(int b = 1, ha = 1; ha <= 2; sweepnext(b,ha,N))
                 {
-                printfln("Sweep=%d, HS=%d, Bond=%d/%d",sw,ha,b,(N-1));
-                }
+                if(!quiet)
+                    {
+                    printfln("Sweep=%d, HS=%d, Bond=%d/%d",sw,ha,b,(N-1));
+                    }
 
-            PH.position(b,psi);
+                PH.position(b,psi);
 
-            auto phi = psi.A(b)*psi.A(b+1);
+                auto phi = psi.A(b)*psi.A(b+1);
 
-            energy = davidson(PH,phi,args);
+                energy = davidson(PH,phi,args);
             
-            auto spec = psi.svdBond(b,phi,(ha==1?Fromleft:Fromright),PH,args);
+                auto spec = psi.svdBond(b,phi,(ha==1?Fromleft:Fromright),PH,args);
 
 
-            if(!quiet)
-                { 
-                printfln("    Truncated to Cutoff=%.1E, Min_m=%d, Max_m=%d",
-                          sweeps.cutoff(sw),
-                          sweeps.minm(sw), 
-                          sweeps.maxm(sw) );
-                printfln("    Trunc. err=%.1E, States kept: %s",
-                         spec.truncerr(),
-                         showm(linkInd(psi,b)) );
+                if(!quiet)
+                    { 
+                    printfln("    Truncated to Cutoff=%.1E, Min_m=%d, Max_m=%d",
+                              sweeps.cutoff(sw),
+                              sweeps.minm(sw), 
+                              sweeps.maxm(sw) );
+                    printfln("    Trunc. err=%.1E, States kept: %s",
+                             spec.truncerr(),
+                             showm(linkInd(psi,b)) );
+                    }
+
+                obs.lastSpectrum(spec);
+
+                args.add("AtBond",b);
+                args.add("HalfSweep",ha);
+                args.add("Energy",energy); 
+                args.add("Truncerr",spec.truncerr()); 
+
+                obs.measure(args);
+
+                } //for loop over b
+
+            auto sm = sw_time.sincemark();
+            printfln("    Sweep %d/%d CPU time = %s (Wall time = %s)",
+                      sw,sweeps.nsweep(),showtime(sm.time),showtime(sm.wall));
+
+            if(obs.checkDone(args)) break;    
+	    
+            } //for loop over sw
+    	}
+    else if(PH.numCenter() == 3)
+	{
+        for(int sw = 1; sw <= sweeps.nsweep(); ++sw)
+            {
+            cpu_time sw_time;
+            args.add("Sweep",sw);
+            args.add("NSweep",sweeps.nsweep());
+            args.add("Cutoff",sweeps.cutoff(sw));
+            args.add("Minm",sweeps.minm(sw));
+            args.add("Maxm",sweeps.maxm(sw));
+            //args.add("Noise",sweeps.noise(sw));
+            args.add("MaxIter",sweeps.niter(sw));
+
+            if(!PH.doWrite()
+               && args.defined("WriteM")
+               && sweeps.maxm(sw) >= args.getInt("WriteM"))
+                {
+                if(!quiet)
+                    {
+                    println("\nTurning on write to disk, write_dir = ",
+                            args.getString("WriteDir","./"));
+                    }
+
+                //psi.doWrite(true);
+                PH.doWrite(true);
                 }
+        
+            Tensor temp;
+            for(int b = 1, ha = 1; ha <= 2; sweepnext3(b,ha,N))
+                {
+                if(!quiet)
+                    {
+                    printfln("Sweep=%d, HS=%d, Bond=%d/%d/%d",sw,ha,b,(N-1));
+                    }
 
-            obs.lastSpectrum(spec);
+                PH.position(b,psi);
+		
+                Tensor phi;
+                if(ha == 1)
+                    {
+                    if(b == 1) phi = psi.A(b) * psi.A(b+1) * psi.A(b+2);
+                    else       phi = temp * psi.A(b+2);
+                    }
+                else
+                    {
+                    if(b == N-2) phi = psi.A(b) * psi.A(b+1) * psi.A(b+2);
+                    else         phi = psi.A(b) * temp;
+                    }
 
-            args.add("AtBond",b);
-            args.add("HalfSweep",ha);
-            args.add("Energy",energy); 
-            args.add("Truncerr",spec.truncerr()); 
+                energy = davidson(PH,phi,args);
+            
+                //auto spec = psi.svdBond(b,phi,(ha==1?Fromleft:Fromright),PH,args);
+                Spectrum spec;
+                if(ha == 1)//From left
+                    {
+                    if(b == 1)
+                        {
+                        Tensor D,V;
+                        spec = svd(phi,psi.Aref(b),D,V,args);
+                        temp = D * V;
+                        
+                        psi.leftLim(b);
+                        if(psi.rightLim() < b+2) psi.rightLim(b+2);
+                        }
+                    else if(b == N-2)
+                        {
+                        Tensor D,V;
+                        Tensor U(commonIndex(phi,psi.A(b-1)),findtype(psi.A(b),Site));
+                        spec = svd(phi,U,D,V,args);
+                        psi.setA(b,U);
+                        V *= D;
+                        Tensor U2;
+                        svd(V,U2,D,psi.Aref(b+2),args);
+                        psi.setA(b+1,U2);
+                        psi.setA(b+2,D * psi.A(b+2));
+	
+                        psi.leftLim(b+1);
+                        if(psi.rightLim() < b+3) psi.rightLim(b+3);
+                        }
+                    else
+                        {
+                        Tensor D,V;
+                        Tensor U(commonIndex(phi,psi.A(b-1)),findtype(psi.A(b),Site));
+                        //spec = svd(phi,U,D,V,args);
+                        spec = denmatDecomp(phi,U,V,(ha==1?Fromleft:Fromright),PH,args);
+                        psi.setA(b,U);
+                        //temp = D * V;
+                        temp = V;
 
-            obs.measure(args);
+                        psi.leftLim(b);
+                        if(psi.rightLim() < b+2) psi.rightLim(b+2);
+                        }
+                    }
+                else//From right
+                    {
+                    if(b == N-2)
+                        {
+                        Tensor U,D;
+                        spec = svd(phi,U,D,psi.Aref(b+2),args);
+                        temp = U * D;
+                    
+                        if(psi.leftLim() > b) psi.leftLim(b);
+                        psi.rightLim(b+2);
+                        }
+                    else if(b == 1)
+                        {
+                        Tensor U,D;
+                        Tensor V(findtype(psi.A(b+2),Site),commonIndex(phi,psi.A(b+3)));
+                        spec = svd(phi,U,D,V,args);
+                        psi.setA(b+2,V);
+                        U *= D;
+                        Tensor V2;
+                        svd(U,psi.Aref(b),D,V2,args);
+                        psi.setA(b+1,V2);
+                        psi.setA(b,psi.A(b) * D);
 
-            } //for loop over b
+                        if(psi.leftLim() > b-1) psi.leftLim(b-1);
+                        psi.rightLim(b+1);
+                        }
+                    else
+                        {
+                        Tensor U,D;
+                        Tensor V(findtype(psi.A(b+2),Site),commonIndex(phi,psi.A(b+3)));
+                        spec = svd(phi,U,D,V,args);
+                        psi.setA(b+2,V);
+                        temp = U * D;
 
-        auto sm = sw_time.sincemark();
-        printfln("    Sweep %d/%d CPU time = %s (Wall time = %s)",
-                  sw,sweeps.nsweep(),showtime(sm.time),showtime(sm.wall));
+                        if(psi.leftLim() > b) psi.leftLim(b);
+                        psi.rightLim(b+2);
+                        }
+                    }
 
-        if(obs.checkDone(args)) break;
-    
-        } //for loop over sw
-    
+                if(!quiet)
+                    { 
+                    printfln("    Truncated to Cutoff=%.1E, Min_m=%d, Max_m=%d",
+                              sweeps.cutoff(sw),
+                              sweeps.minm(sw), 
+                              sweeps.maxm(sw) );
+                    //printfln("    Trunc. err=%.1E, States kept: %s",
+                    //         spec.truncerr(),
+                    //         showm(linkInd(psi,b)) );//The linkInd which return the commonIndex between b and b+1 is not well defined, since now we have the temp tensor.
+                    }
+
+                obs.lastSpectrum(spec);
+                args.add("AtBond",b);
+                args.add("HalfSweep",ha);
+                args.add("Energy",energy); 
+                args.add("Truncerr",spec.truncerr()); 
+
+                obs.measure(args);
+
+                } //for loop over b
+
+            auto sm = sw_time.sincemark();
+            printfln("    Sweep %d/%d CPU time = %s (Wall time = %s)",
+                      sw,sweeps.nsweep(),showtime(sm.time),showtime(sm.wall));
+
+            if(obs.checkDone(args)) break;
+       
+            } //for loop over sw
+        }
+    else
+        Error("dmrg only supports 2 and 3 center sites in the current version");
+
     psi.normalize();
 
     return energy;

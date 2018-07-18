@@ -22,6 +22,13 @@ namespace itensor {
 //   |  |     |      |      |     |      | 
 //   '----...---                ----...--'
 //
+// Three-site variation: modify nc_ through numCenter() from Args.
+//
+//   .----...---                      ----...--.
+//   |  |     |      |      |      |    |      | 
+//   W1-W2-..Wj-1 - Wj - Wj+1 - Wj+2 -- Wj+3..-WN
+//   |  |     |      |      |      |    |      | 
+//   '----...---                      ----...--'
 // 
 //  Here the W's are the site tensors
 //  of the MPO "Op" and the method position(j,psi)
@@ -169,7 +176,11 @@ class LocalMPO
     numCenter(int val) 
         { 
         if(val < 1) Error("numCenter must be set >= 1");
-        nc_ = val; 
+        if(val != nc_)
+            {
+            nc_ = val;
+            lop_.numCenter(val);
+            }
         }
 
     long
@@ -272,6 +283,7 @@ LocalMPO(const MPOt<Tensor>& H,
     { 
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
+        // when constructing LocalMPO's object, the default constructor of the lop_ will be automatically called, which will make the nc_ of the lop_ be the default value 2. So we need to explicitly modify the nc_ of lop_. The nc_ of the localmpo and localop should always be the same. So it will be better if we only have one nc_, i.e. the lop_'s nc_. To be modified!
     }
 
 template <class Tensor>
@@ -300,17 +312,20 @@ LocalMPO(const MPOt<Tensor>& H,
       PH_(H.N()+2),
       LHlim_(0),
       RHlim_(H.N()+1),
-      nc_(2),
+      nc_(H.N()),
       do_write_(false),
       writedir_("."),
       Psi_(0)
     { 
     PH_[0] = LH;
     PH_[H.N()+1] = RH;
-    if(H.N()==2)
-        lop_.update(Op_->A(1),Op_->A(2),L(),R());
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
+    if(H.N() == nc_)
+        {
+        if(nc_ == 2) lop_.update(Op_->A(1),Op_->A(2),L(),R());
+        if(nc_ == 3) lop_.update(Op_->A(1),Op_->A(2),Op_->A(3),L(),R());
+        }
     }
 
 template <class Tensor>
@@ -353,8 +368,13 @@ LocalMPO(MPOt<Tensor> const& H,
     { 
     PH_.at(LHlim) = LH;
     PH_.at(RHlim) = RH;
-    if(H.N()==2) lop_.update(Op_->A(1),Op_->A(2),L(),R());
-    if(args.defined("NumCenter")) numCenter(args.getInt("NumCenter"));
+    if(args.defined("NumCenter")) 
+        numCenter(args.getInt("NumCenter"));
+    if(H.N() == nc_)
+        {
+        if(nc_ == 2) lop_.update(Op_->A(1),Op_->A(2),L(),R());
+        if(nc_ == 3) lop_.update(Op_->A(1),Op_->A(2),Op_->A(3),L(),R());
+        }
     }
 
 template <class Tensor> inline
@@ -370,8 +390,17 @@ product(const Tensor& phi, Tensor& phip) const
         {
         int b = position();
         auto othr = (!L() ? dag(prime(Psi_->A(b),Link)) : L()*dag(prime(Psi_->A(b),Link)));
-        auto othrR = (!R() ? dag(prime(Psi_->A(b+1),Link)) : R()*dag(prime(Psi_->A(b+1),Link)));
-        othr *= othrR;
+        if(nc_ == 2)
+            {
+            othr *= (!R() ? dag(prime(Psi_->A(b+1),Link)) : R()*dag(prime(Psi_->A(b+1),Link)));
+            }
+        else if(nc_ == 3)
+            {
+            othr *= dag(prime(Psi_->A(b+1),Link));
+            othr *= (!R() ? dag(prime(Psi_->A(b+2),Link)) : R()*dag(prime(Psi_->A(b+2),Link)));
+            }
+        else
+            Error("LocalOp only supports 2 and 3 center sites currently");
         auto z = (othr*phi).cplx();
 
         phip = dag(othr);
@@ -413,15 +442,18 @@ position(int b, const MPSType& psi)
     setRHlim(b+nc_); //not redundant since RHlim_ could be < b+nc_
 
 #ifdef DEBUG
-    if(nc_ != 2)
+    if(nc_ != 2 && nc_ != 3)
         {
-        Error("LocalOp only supports 2 center sites currently");
+        Error("LocalOp only supports 2 and 3 center sites currently");
         }
 #endif
 
     if(Op_ != 0) //normal MPO case
         {
-        lop_.update(Op_->A(b),Op_->A(b+1),L(),R());
+        if(nc_ == 2)
+            lop_.update(Op_->A(b),Op_->A(b+1),L(),R());
+        else // if(nc_ == 3)
+            lop_.update(Op_->A(b),Op_->A(b+1),Op_->A(b+2),L(),R());
         }
     }
 
@@ -443,9 +475,9 @@ shift(int j, Direction dir, const Tensor& A)
     if(!(*this)) Error("LocalMPO is null");
 
 #ifdef DEBUG
-    if(nc_ != 2)
+    if(nc_ != 2 && nc_ != 3)
         {
-        Error("LocalOp only supports 2 center sites currently");
+        Error("LocalOp only supports 2 and 3 center sites currently");
         }
 #endif
 
@@ -464,7 +496,10 @@ shift(int j, Direction dir, const Tensor& A)
         setLHlim(j);
         setRHlim(j+nc_+1);
 
-        lop_.update(Op_->A(j+1),Op_->A(j+2),L(),R());
+        if(nc_ == 2) 
+            lop_.update(Op_->A(j+1),Op_->A(j+2),L(),R());
+        else // if(nc_ == 3) 
+            lop_.update(Op_->A(j+1),Op_->A(j+2),Op_->A(j+3),L(),R());
         }
     else //dir == Fromright
         {
@@ -481,7 +516,10 @@ shift(int j, Direction dir, const Tensor& A)
         setLHlim(j-nc_-1);
         setRHlim(j);
 
-        lop_.update(Op_->A(j-1),Op_->A(j),L(),R());
+        if(nc_ == 2) 
+            lop_.update(Op_->A(j-1),Op_->A(j),L(),R());
+        else // if(nc_ == 3)
+            lop_.update(Op_->A(j-2),Op_->A(j-1),Op_->A(j),L(),R());
         }
     }
 

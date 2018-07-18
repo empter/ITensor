@@ -61,7 +61,7 @@ main()
     //
     // Begin the DMRG calculation
     //
-    auto energy = dmrg(psi,H,sweeps,"Quiet");
+    auto energy = dmrg(psi,H,sweeps,{"Quiet",true,"NumCenter",3});
 
     //
     // Print the final energy reported by DMRG
