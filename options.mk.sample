@@ -1,5 +1,5 @@
 ### User Configurable Options
-
+Eigenpath=/usr/local/include/eigen3
 ## To set up, follow the steps [1], [2], [3] below
 
 #########
@@ -95,7 +95,7 @@ BLAS_LAPACK_LIBFLAGS=-framework Accelerate
 ## used to compile optimized and debug code, you can do so here.
 
 ## Flags to give the compiler for "release mode"
-OPTIMIZATIONS=-O2 -DNDEBUG -Wall
+OPTIMIZATIONS=-O3 -DNDEBUG -Wall -march=native
 
 ## Flags to give the compiler for "debug mode"
 DEBUGFLAGS=-DDEBUG -g -Wall -pedantic
@@ -125,7 +125,7 @@ ITENSOR_LIBGFLAGS+= $(BLAS_LAPACK_LIBFLAGS)
 ITENSOR_LIBS=$(patsubst %,$(ITENSOR_LIBDIR)/lib%.a, $(ITENSOR_LIBNAMES))
 ITENSOR_GLIBS=$(patsubst %,$(ITENSOR_LIBDIR)/lib%-g.a, $(ITENSOR_LIBNAMES))
 
-ITENSOR_INCLUDEFLAGS=-I$(ITENSOR_INCLUDEDIR) $(BLAS_LAPACK_INCLUDEFLAGS)
+ITENSOR_INCLUDEFLAGS=-I$(ITENSOR_INCLUDEDIR) $(BLAS_LAPACK_INCLUDEFLAGS) -I $(Eigenpath)
 
 ifndef CCCOM
 $(error Makefile variable CCCOM not defined in options.mk; please define it.)

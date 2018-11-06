@@ -96,6 +96,9 @@ class LocalMPO
     void
     product(const Tensor& phi, Tensor& phip) const;
 
+    void
+    localh(Tensor& phip) const;
+
     Real
     expect(const Tensor& phi) const { return lop_.expect(phi); }
 
@@ -370,6 +373,20 @@ product(const Tensor& phi, Tensor& phip) const
     else
         {
         Error("LocalMPO is null");
+        }
+    }
+
+template <class Tensor> inline
+void LocalMPO<Tensor>::
+localh(Tensor& phip) const
+    {
+    if(Op_ != 0)
+        {
+        lop_.localh(phip);
+        }
+    else
+        {
+        Error("Only support normal MPO or LocalMPO is null");
         }
     }
 

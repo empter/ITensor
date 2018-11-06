@@ -65,6 +65,9 @@ class LocalOp
     void
     product(Tensor const& phi, Tensor & phip) const;
 
+    void
+    localh(Tensor & phip) const;
+
     Real
     expect(Tensor const& phi) const;
 
@@ -240,6 +243,35 @@ product(Tensor const& phi,
         }
 
     phip.mapprime(1,0);
+    }
+
+template <class Tensor>
+void inline LocalOp<Tensor>::
+localh(Tensor& phip) const
+    {
+    if(!(*this)) Error("LocalOp is null");
+
+    auto& Op1 = *Op1_;
+    auto& Op2 = *Op2_;
+
+    if(LIsNull())
+        {
+        if(!RIsNull())
+            phip = R(); //m^3 k d
+
+        phip *= Op2; //m^2 k^2
+        phip *= Op1; //m^2 k^2
+        }
+    else
+        {
+        phip = L(); //m^3 k d
+
+        phip *= Op1; //m^2 k^2
+        phip *= Op2; //m^2 k^2
+
+        if(!RIsNull())
+            phip *= R();
+        }
     }
 
 template <class Tensor>
