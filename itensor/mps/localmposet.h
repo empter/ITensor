@@ -20,23 +20,26 @@ class LocalMPOSet
     LocalMPOSet(std::vector<MPOt<Tensor>> const& Op,
                 Args const& args = Args::global());
 
-    LocalMPOSet(std::vector<MPOt<Tensor>> const& H, 
-                std::vector<Tensor> const& LH, 
+    LocalMPOSet(std::vector<MPOt<Tensor>> const& H,
+                std::vector<Tensor> const& LH,
                 int LHlim,
                 std::vector<Tensor> const& RH,
                 int RHlim,
                 Args const& args = Args::global());
 
     void
-    product(Tensor const& phi, 
+    product(Tensor const& phi,
             Tensor & phip) const;
+
+    void
+    localh(Tensor & phip) const;
 
     Real
     expect(Tensor const& phi) const;
 
     Tensor
-    deltaRho(Tensor const& AA, 
-             Tensor const& comb, 
+    deltaRho(Tensor const& AA,
+             Tensor const& comb,
              Direction dir) const;
 
     Tensor
@@ -44,19 +47,19 @@ class LocalMPOSet
 
     template <class MPSType>
     void
-    position(int b, 
+    position(int b,
              MPSType const& psi);
 
     std::vector<Tensor>
-    L() const 
-        { 
+    L() const
+        {
         auto L = std::vector<Tensor>(lmpo_.size());
         for(auto n : range(lmpo_)) L.at(n) = lmpo_.at(n).L();
         return L;
         }
     std::vector<Tensor>
-    R() const 
-        { 
+    R() const
+        {
         auto R = std::vector<Tensor>(lmpo_.size());
         for(auto n : range(lmpo_)) R.at(n) = lmpo_.at(n).R();
         return R;
@@ -64,12 +67,12 @@ class LocalMPOSet
 
     void
     L(std::vector<Tensor> const& nL)
-        { 
+        {
         for(auto n : range(lmpo_)) lmpo_.at(n).L(nL.at(n));
         }
     void
     R(std::vector<Tensor> const& nR)
-        { 
+        {
         for(auto n : range(lmpo_)) lmpo_.at(n).R(nR.at(n));
         }
 
@@ -93,8 +96,8 @@ class LocalMPOSet
     bool
     doWrite() const { return lmpo_.front().doWrite(); }
     void
-    doWrite(bool val, Args const& args = Args::global()) 
-        { 
+    doWrite(bool val, Args const& args = Args::global())
+        {
         for(auto& lm : lmpo_) lm.doWrite(val,args);
         }
 
@@ -106,7 +109,7 @@ LocalMPOSet(std::vector<MPOt<Tensor>> const& Op,
             Args const& args)
   : Op_(&Op),
     lmpo_(Op.size())
-    { 
+    {
     using LocalMPOT = LocalMPO<Tensor>;
     for(auto n : range(lmpo_.size()))
         {
@@ -116,15 +119,15 @@ LocalMPOSet(std::vector<MPOt<Tensor>> const& Op,
 
 template <class Tensor>
 inline LocalMPOSet<Tensor>::
-LocalMPOSet(std::vector<MPOt<Tensor>> const& H, 
-            std::vector<Tensor> const& LH, 
+LocalMPOSet(std::vector<MPOt<Tensor>> const& H,
+            std::vector<Tensor> const& LH,
             int LHlim,
             std::vector<Tensor> const& RH,
             int RHlim,
             Args const& args)
   : Op_(&H),
     lmpo_(H.size())
-    { 
+    {
     using LocalMPOT = LocalMPO<Tensor>;
     for(auto n : range(lmpo_.size()))
         {
@@ -134,7 +137,7 @@ LocalMPOSet(std::vector<MPOt<Tensor>> const& H,
 
 template <class Tensor>
 void inline LocalMPOSet<Tensor>::
-product(Tensor const& phi, 
+product(Tensor const& phi,
         Tensor & phip) const
     {
     lmpo_.front().product(phi,phip);
@@ -144,6 +147,20 @@ product(Tensor const& phi,
         {
         lmpo_[n].product(phi,phi_n);
         phip += phi_n;
+        }
+    }
+
+template <class Tensor>
+void inline LocalMPOSet<Tensor>::
+localh(Tensor & phip) const
+    {
+    lmpo_.front().localh(phip);
+
+    Tensor lh_n;
+    for(auto n : range(1,lmpo_.size()))
+        {
+        lmpo_[n].localh(lh_n);
+        phip += lh_n;
         }
     }
 
@@ -163,7 +180,7 @@ expect(Tensor const& phi) const
 template <class Tensor>
 Tensor inline LocalMPOSet<Tensor>::
 deltaRho(Tensor const& AA,
-         Tensor const& comb, 
+         Tensor const& comb,
          Direction dir) const
     {
     Tensor delta = lmpo_.front().deltaRho(AA,comb,dir);
@@ -187,9 +204,9 @@ diag() const
     }
 
 template <class Tensor>
-template <class MPSType> 
+template <class MPSType>
 void inline LocalMPOSet<Tensor>::
-position(int b, 
+position(int b,
          MPSType const& psi)
     {
     for(auto n : range(lmpo_.size()))

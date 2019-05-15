@@ -11,21 +11,21 @@
 namespace itensor {
 
 //
-// The LocalMPO class projects an MPO 
+// The LocalMPO class projects an MPO
 // into the reduced Hilbert space of
 // some number of sites of an MPS.
 // (The default is 2 sites.)
 //
 //   .----...---                ----...--.
-//   |  |     |      |      |     |      | 
+//   |  |     |      |      |     |      |
 //   W1-W2-..Wj-1 - Wj - Wj+1 -- Wj+2..-WN
-//   |  |     |      |      |     |      | 
+//   |  |     |      |      |     |      |
 //   '----...---                ----...--'
 //
-// 
+//
 //  Here the W's are the site tensors
 //  of the MPO "Op" and the method position(j,psi)
-//  has been called using the MPS 'psi' as a basis 
+//  has been called using the MPS 'psi' as a basis
 //  for the projection.
 //
 //  This results in an unprojected region of
@@ -46,32 +46,32 @@ class LocalMPO
     //
     //Regular case where H is an MPO for a finite system
     //
-    LocalMPO(const MPOt<Tensor>& H, 
+    LocalMPO(const MPOt<Tensor>& H,
              const Args& args = Global::args());
 
     //
     //Use an MPS instead of an MPO. Equivalent to using an MPO
     //of the outer product |Psi><Psi| but much more efficient.
     //
-    LocalMPO(const MPSt<Tensor>& Psi, 
+    LocalMPO(const MPSt<Tensor>& Psi,
              const Args& args = Global::args());
 
     //
     //Use an MPO having boundary indices capped off by left and
-    //right boundary tensors LH and RH. Ok if one or both boundary 
+    //right boundary tensors LH and RH. Ok if one or both boundary
     //tensors are default-constructed.
     //
-    LocalMPO(const MPOt<Tensor>& H, 
-             const Tensor& LH, 
+    LocalMPO(const MPOt<Tensor>& H,
+             const Tensor& LH,
              const Tensor& RH,
              const Args& args = Global::args());
 
     //
     //Use an MPS with boundary indices capped off by left and right
-    //boundary tensors LP and RP. Ok if one or both boundary tensors 
+    //boundary tensors LP and RP. Ok if one or both boundary tensors
     //are default-constructed.
     //
-    LocalMPO(const MPSt<Tensor>& Psi, 
+    LocalMPO(const MPSt<Tensor>& Psi,
              const Tensor& LP,
              const Tensor& RP,
              const Args& args = Global::args());
@@ -82,8 +82,8 @@ class LocalMPO
     //These positions indicate the site number of the right-most MPO
     //tensor included in LH and the left-most MPO tensor included in RH.
     //
-    LocalMPO(MPOt<Tensor> const& H, 
-             Tensor const& LH, 
+    LocalMPO(MPOt<Tensor> const& H,
+             Tensor const& LH,
              int LHlim,
              Tensor const& RH,
              int RHlim,
@@ -103,7 +103,7 @@ class LocalMPO
     expect(const Tensor& phi) const { return lop_.expect(phi); }
 
     Tensor
-    deltaRho(const Tensor& AA, 
+    deltaRho(const Tensor& AA,
              const Tensor& comb, Direction dir) const
         { return lop_.deltaRho(AA,comb,dir); }
 
@@ -159,8 +159,8 @@ class LocalMPO
     R(int j, Tensor const& nR);
 
     const MPOt<Tensor>&
-    H() const 
-        { 
+    H() const
+        {
         if(Op_ == 0)
             Error("LocalMPO is null or contains an MPS");
         return *Op_;
@@ -169,10 +169,10 @@ class LocalMPO
     int
     numCenter() const { return nc_; }
     void
-    numCenter(int val) 
-        { 
+    numCenter(int val)
+        {
         if(val < 1) Error("numCenter must be set >= 1");
-        nc_ = val; 
+        nc_ = val;
         }
 
     long
@@ -184,14 +184,14 @@ class LocalMPO
     doWrite() const { return do_write_; }
     void
     doWrite(bool val,
-            Args const& args = Args::global()) 
-        { 
+            Args const& args = Args::global())
+        {
         if(Psi_ != 0) Error("Write to disk not yet supported for LocalMPO initialized with an MPS");
         if(!do_write_ && (val == true))
             {
-            initWrite(args); 
+            initWrite(args);
             }
-        do_write_ = val; 
+        do_write_ = val;
         }
 
     std::string const&
@@ -262,7 +262,7 @@ LocalMPO()
 
 template <class Tensor>
 inline LocalMPO<Tensor>::
-LocalMPO(const MPOt<Tensor>& H, 
+LocalMPO(const MPOt<Tensor>& H,
          const Args& args)
     : Op_(&H),
       PH_(H.N()+2),
@@ -270,14 +270,14 @@ LocalMPO(const MPOt<Tensor>& H,
       RHlim_(H.N()+1),
       nc_(2),
       Psi_(0)
-    { 
+    {
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
     }
 
 template <class Tensor>
 inline LocalMPO<Tensor>::
-LocalMPO(const MPSt<Tensor>& Psi, 
+LocalMPO(const MPSt<Tensor>& Psi,
          const Args& args)
     : Op_(0),
       PH_(Psi.N()+2),
@@ -285,14 +285,14 @@ LocalMPO(const MPSt<Tensor>& Psi,
       RHlim_(Psi.N()+1),
       nc_(2),
       Psi_(&Psi)
-    { 
+    {
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
     }
 
 template <class Tensor>
 inline LocalMPO<Tensor>::
-LocalMPO(const MPOt<Tensor>& H, 
+LocalMPO(const MPOt<Tensor>& H,
          const Tensor& LH, const Tensor& RH,
          const Args& args)
     : Op_(&H),
@@ -301,7 +301,7 @@ LocalMPO(const MPOt<Tensor>& H,
       RHlim_(H.N()+1),
       nc_(2),
       Psi_(0)
-    { 
+    {
     PH_[0] = LH;
     PH_[H.N()+1] = RH;
     if(H.N()==2)
@@ -312,7 +312,7 @@ LocalMPO(const MPOt<Tensor>& H,
 
 template <class Tensor>
 inline LocalMPO<Tensor>::
-LocalMPO(const MPSt<Tensor>& Psi, 
+LocalMPO(const MPSt<Tensor>& Psi,
          const Tensor& LP,
          const Tensor& RP,
          const Args& args)
@@ -322,7 +322,7 @@ LocalMPO(const MPSt<Tensor>& Psi,
       RHlim_(Psi.N()+1),
       nc_(2),
       Psi_(&Psi)
-    { 
+    {
     PH_[0] = LP;
     PH_[Psi.N()+1] = RP;
     if(args.defined("NumCenter"))
@@ -331,8 +331,8 @@ LocalMPO(const MPSt<Tensor>& Psi,
 
 template <class Tensor>
 inline LocalMPO<Tensor>::
-LocalMPO(MPOt<Tensor> const& H, 
-         Tensor const& LH, 
+LocalMPO(MPOt<Tensor> const& H,
+         Tensor const& LH,
          int LHlim,
          Tensor const& RH,
          int RHlim,
@@ -343,7 +343,7 @@ LocalMPO(MPOt<Tensor> const& H,
       RHlim_(RHlim),
       nc_(2),
       Psi_(0)
-    { 
+    {
     PH_.at(LHlim) = LH;
     PH_.at(RHlim) = RH;
     if(H.N()==2) lop_.update(Op_->A(1),Op_->A(2),L(),R());
@@ -358,7 +358,7 @@ product(const Tensor& phi, Tensor& phip) const
         {
         lop_.product(phi,phip);
         }
-    else 
+    else
     if(Psi_ != 0)
         {
         int b = position();
@@ -385,8 +385,23 @@ localh(Tensor& phip) const
         lop_.localh(phip);
         }
     else
+    if(Psi_ != 0)
         {
-        Error("Only support normal MPO or LocalMPO is null");
+        if(L())
+          {
+            if(!R())
+              phip = R();
+          }
+        else
+          {
+            phip = L();
+            if(!R())
+              phip *= R();
+          }
+        }
+    else
+        {
+        Error("LocalMPO is null");
         }
     }
 
@@ -407,7 +422,7 @@ R(int j, const Tensor& nR)
     }
 
 template <class Tensor>
-template <class MPSType> 
+template <class MPSType>
 inline void LocalMPO<Tensor>::
 position(int b, const MPSType& psi)
     {
@@ -493,7 +508,7 @@ shift(int j, Direction dir, const Tensor& A)
     }
 
 template <class Tensor>
-template <class MPSType> 
+template <class MPSType>
 inline void LocalMPO<Tensor>::
 makeL(const MPSType& psi, int k)
     {
@@ -531,7 +546,7 @@ makeL(const MPSType& psi, int k)
     }
 
 template <class Tensor>
-template <class MPSType> 
+template <class MPSType>
 inline void LocalMPO<Tensor>::
 makeR(const MPSType& psi, int k)
     {
@@ -590,7 +605,7 @@ setLHlim(int val)
         PH_.at(LHlim_) = Tensor();
         }
     LHlim_ = val;
-    if(LHlim_ < 1) 
+    if(LHlim_ < 1)
         {
         //Set to null tensor and return
         PH_.at(LHlim_) = Tensor();
@@ -619,7 +634,7 @@ setRHlim(int val)
         PH_.at(RHlim_) = Tensor();
         }
     RHlim_ = val;
-    if(RHlim_ > Op_->N()) 
+    if(RHlim_ > Op_->N())
         {
         //Set to null tensor and return
         PH_.at(RHlim_) = Tensor();

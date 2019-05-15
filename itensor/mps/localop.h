@@ -13,7 +13,7 @@ namespace itensor {
 // The LocalOp class represents
 // an MPO or other operator that
 // has been projected into the
-// reduced Hilbert space of 
+// reduced Hilbert space of
 // two sites of an MPS.
 //
 //   .-              -.
@@ -48,13 +48,13 @@ class LocalOp
 
     LocalOp();
 
-    LocalOp(Tensor const& Op1, 
+    LocalOp(Tensor const& Op1,
             Tensor const& Op2,
             Args const& args = Global::args());
 
-    LocalOp(Tensor const& Op1, 
-            Tensor const& Op2, 
-            Tensor const& L, 
+    LocalOp(Tensor const& Op1,
+            Tensor const& Op2,
+            Tensor const& L,
             Tensor const& R,
             Args const& args = Global::args());
 
@@ -72,8 +72,8 @@ class LocalOp
     expect(Tensor const& phi) const;
 
     Tensor
-    deltaRho(Tensor const& rho, 
-             Tensor const& combine, 
+    deltaRho(Tensor const& rho,
+             Tensor const& combine,
              Direction dir) const;
 
     Tensor
@@ -90,35 +90,35 @@ class LocalOp
     update(Tensor const& Op1, Tensor const& Op2);
 
     void
-    update(Tensor const& Op1, 
-           Tensor const& Op2, 
-           Tensor const& L, 
+    update(Tensor const& Op1,
+           Tensor const& Op2,
+           Tensor const& L,
            Tensor const& R);
 
     Tensor const&
-    Op1() const 
-        { 
+    Op1() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *Op1_;
         }
 
     Tensor const&
-    Op2() const 
-        { 
+    Op2() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *Op2_;
         }
 
     Tensor const&
-    L() const 
-        { 
+    L() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *L_;
         }
 
     Tensor const&
-    R() const 
-        { 
+    R() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *R_;
         }
@@ -142,14 +142,14 @@ LocalOp()
     L_(nullptr),
     R_(nullptr),
     size_(-1)
-    { 
+    {
     }
 
 template <class Tensor>
 inline LocalOp<Tensor>::
 LocalOp(const Tensor& Op1, const Tensor& Op2,
         const Args& args)
-    : 
+    :
     Op1_(nullptr),
     Op2_(nullptr),
     L_(nullptr),
@@ -161,10 +161,10 @@ LocalOp(const Tensor& Op1, const Tensor& Op2,
 
 template <class Tensor>
 inline LocalOp<Tensor>::
-LocalOp(const Tensor& Op1, const Tensor& Op2, 
+LocalOp(const Tensor& Op1, const Tensor& Op2,
         const Tensor& L, const Tensor& R,
         const Args& args)
-    : 
+    :
     Op1_(nullptr),
     Op2_(nullptr),
     L_(nullptr),
@@ -187,7 +187,7 @@ update(const Tensor& Op1, const Tensor& Op2)
 
 template <class Tensor>
 void inline LocalOp<Tensor>::
-update(const Tensor& Op1, const Tensor& Op2, 
+update(const Tensor& Op1, const Tensor& Op2,
        const Tensor& L, const Tensor& R)
     {
     update(Op1,Op2);
@@ -213,7 +213,7 @@ RIsNull() const
 
 template <class Tensor>
 void inline LocalOp<Tensor>::
-product(Tensor const& phi, 
+product(Tensor const& phi,
         Tensor      & phip) const
     {
     if(!(*this)) Error("LocalOp is null");
@@ -225,7 +225,7 @@ product(Tensor const& phi,
         {
         phip = phi;
 
-        if(!RIsNull()) 
+        if(!RIsNull())
             phip *= R(); //m^3 k d
 
         phip *= Op2; //m^2 k^2
@@ -238,7 +238,7 @@ product(Tensor const& phi,
         phip *= Op1; //m^2 k^2
         phip *= Op2; //m^2 k^2
 
-        if(!RIsNull()) 
+        if(!RIsNull())
             phip *= R();
         }
 
@@ -256,18 +256,18 @@ localh(Tensor& phip) const
 
     if(LIsNull())
         {
-        if(!RIsNull())
-            phip = R(); //m^3 k d
+        phip = Op1;
+        phip *= Op2;
 
-        phip *= Op2; //m^2 k^2
-        phip *= Op1; //m^2 k^2
+        if(!RIsNull())
+            phip *= R();
         }
     else
         {
-        phip = L(); //m^3 k d
+        phip = Op1;
+        phip *= Op2;
 
-        phip *= Op1; //m^2 k^2
-        phip *= Op2; //m^2 k^2
+        phip *= L();
 
         if(!RIsNull())
             phip *= R();
@@ -285,8 +285,8 @@ expect(const Tensor& phi) const
 
 template <class Tensor>
 Tensor inline LocalOp<Tensor>::
-deltaRho(Tensor const& AA, 
-         Tensor const& combine, 
+deltaRho(Tensor const& AA,
+         Tensor const& combine,
          Direction dir) const
     {
     auto drho = AA;
@@ -326,7 +326,7 @@ diag() const
     auto findIndPair = [](Tensor const& T) {
         for(auto& s : T.inds())
             {
-            if(s.primeLevel() == 0 && hasindex(T,prime(s))) 
+            if(s.primeLevel() == 0 && hasindex(T,prime(s)))
                 {
                 return s;
                 }
@@ -384,10 +384,10 @@ size() const
     if(!(*this)) Error("LocalOp is default constructed");
     if(size_ == -1)
         {
-        //Calculate linear size of this 
+        //Calculate linear size of this
         //op as a square matrix
         size_ = 1;
-        if(!LIsNull()) 
+        if(!LIsNull())
             {
             for(auto& I : L().inds())
                 {
@@ -398,7 +398,7 @@ size() const
                     }
                 }
             }
-        if(!RIsNull()) 
+        if(!RIsNull())
             {
             for(auto& I : R().inds())
                 {
