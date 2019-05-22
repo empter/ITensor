@@ -18,7 +18,7 @@ class LocalMPO_MPS
     std::vector<MPSt<Tensor>> const* psis_ = nullptr;
     //LocalMPO object representing projected version
     //of the MPO Op_
-    LocalMPOType lmpo_; 
+    LocalMPOType lmpo_;
     //LocalMPO objects representing projected version
     //of each MPS in psis_
     std::vector<LocalMPOType> lmps_;
@@ -27,11 +27,11 @@ class LocalMPO_MPS
 
     LocalMPO_MPS() { }
 
-    LocalMPO_MPS(MPOt<Tensor> const& Op, 
+    LocalMPO_MPS(MPOt<Tensor> const& Op,
                  std::vector<MPSt<Tensor> > const& psis,
                  Args const& args = Args::global());
 
-    LocalMPO_MPS(MPOt<Tensor> const& Op, 
+    LocalMPO_MPS(MPOt<Tensor> const& Op,
                  Tensor const& LOp,
                  Tensor const& ROp,
                  std::vector<MPSt<Tensor>> const& psis,
@@ -45,15 +45,15 @@ class LocalMPO_MPS
     //
 
     void
-    product(Tensor const& phi, 
+    product(Tensor const& phi,
             Tensor& phip) const;
 
     Real
     expect(Tensor const& phi) const { return lmpo_.expect(phi); }
 
     Tensor
-    deltaRho(Tensor const& AA, 
-             Tensor const& comb, 
+    deltaRho(Tensor const& AA,
+             Tensor const& comb,
              Direction dir) const
         { return lmpo_.deltaRho(AA,comb,dir); }
 
@@ -91,18 +91,18 @@ LocalMPO_MPS(MPOt<Tensor> const& Op,
     psis_(&psis),
     lmps_(psis.size()),
     weight_(args.getReal("Weight",1))
-    { 
-    lmpo_ = LocalMPOType(Op);
+    {
+    lmpo_ = LocalMPOType(Op,args);
 
     for(auto j : range(lmps_.size()))
         {
-        lmps_[j] = LocalMPOType(psis[j]);
+        lmps_[j] = LocalMPOType(psis[j],args);
         }
     }
 
 template <class Tensor>
 inline LocalMPO_MPS<Tensor>::
-LocalMPO_MPS(MPOt<Tensor> const& Op, 
+LocalMPO_MPS(MPOt<Tensor> const& Op,
              Tensor const& LOp,
              Tensor const& ROp,
              std::vector<MPSt<Tensor>> const& psis,
@@ -113,8 +113,8 @@ LocalMPO_MPS(MPOt<Tensor> const& Op,
     psis_(&psis),
     lmps_(psis.size()),
     weight_(args.getReal("Weight",1))
-    { 
-    lmpo_ = LocalMPOType(Op,LOp,ROp);
+    {
+    lmpo_ = LocalMPOType(Op,LOp,ROp,args);
 #ifdef DEBUG
     if(Lpsi.size() != psis.size()) Error("Lpsi must have same number of elements as psis");
     if(Rpsi.size() != psis.size()) Error("Rpsi must have same number of elements as psis");
@@ -122,13 +122,13 @@ LocalMPO_MPS(MPOt<Tensor> const& Op,
 
     for(auto j : range(lmps_.size()))
         {
-        lmps_[j] = LocalMPOType(psis[j],Lpsi[j],Rpsi[j]);
+        lmps_[j] = LocalMPOType(psis[j],Lpsi[j],Rpsi[j],args);
         }
     }
 
 template <class Tensor>
 void inline LocalMPO_MPS<Tensor>::
-product(Tensor const& phi, 
+product(Tensor const& phi,
         Tensor & phip) const
     {
     lmpo_.product(phi,phip);
@@ -143,7 +143,7 @@ product(Tensor const& phi,
     }
 
 template <class Tensor>
-template <class MPSType> 
+template <class MPSType>
 void inline LocalMPO_MPS<Tensor>::
 position(int b, const MPSType& psi)
     {

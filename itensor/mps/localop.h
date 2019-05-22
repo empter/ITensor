@@ -95,6 +95,11 @@ class LocalOp
            Tensor const& L,
            Tensor const& R);
 
+    void
+    update(Tensor const& Op1,
+           Tensor const& L,
+           Tensor const& R);
+
     Tensor const&
     Op1() const
         {
@@ -196,6 +201,18 @@ update(const Tensor& Op1, const Tensor& Op2,
     }
 
 template <class Tensor>
+void inline LocalOp<Tensor>::
+update(const Tensor& Op1,
+       const Tensor& L, const Tensor& R)
+    {
+    Op1_ = &Op1;
+    Op2_ = nullptr;
+    L_ = &L;
+    R_ = &R;
+    size_ = -1;
+    }
+
+template <class Tensor>
 bool inline LocalOp<Tensor>::
 LIsNull() const
     {
@@ -219,7 +236,7 @@ product(Tensor const& phi,
     if(!(*this)) Error("LocalOp is null");
 
     auto& Op1 = *Op1_;
-    auto& Op2 = *Op2_;
+    // auto& Op2 = *Op2_;
 
     if(LIsNull())
         {
@@ -228,7 +245,7 @@ product(Tensor const& phi,
         if(!RIsNull())
             phip *= R(); //m^3 k d
 
-        phip *= Op2; //m^2 k^2
+        if(Op2_ != nullptr) phip *= (*Op2_); //m^2 k^2
         phip *= Op1; //m^2 k^2
         }
     else
@@ -236,7 +253,7 @@ product(Tensor const& phi,
         phip = phi * L(); //m^3 k d
 
         phip *= Op1; //m^2 k^2
-        phip *= Op2; //m^2 k^2
+        if(Op2_ != nullptr) phip *= (*Op2_); //m^2 k^2
 
         if(!RIsNull())
             phip *= R();
@@ -252,22 +269,22 @@ localh(Tensor& phip) const
     if(!(*this)) Error("LocalOp is null");
 
     auto& Op1 = *Op1_;
-    auto& Op2 = *Op2_;
+    // auto& Op2 = *Op2_;
 
     if(LIsNull())
         {
         phip = Op1;
-        phip *= Op2;
+        if(Op2_ != nullptr) phip *= (*Op2_);
 
         if(!RIsNull())
             phip *= R();
         }
     else
         {
-        phip = Op1;
-        phip *= Op2;
+        phip = L();
 
-        phip *= L();
+        phip *= Op1;
+        if(Op2_ != nullptr) phip *= (*Op2_);
 
         if(!RIsNull())
             phip *= R();
@@ -320,7 +337,7 @@ diag() const
     if(!(*this)) Error("LocalOp is null");
 
     auto& Op1 = *Op1_;
-    auto& Op2 = *Op2_;
+    // auto& Op2 = *Op2_;
 
     //lambda helper function:
     auto findIndPair = [](Tensor const& T) {
@@ -338,9 +355,12 @@ diag() const
     auto Diag = Op1 * delta(toTie,prime(toTie),prime(toTie,2));
     Diag.noprime();
 
-    toTie = noprime(findtype(Op2,Site));
-    auto Diag2 = Op2 * delta(toTie,prime(toTie),prime(toTie,2));
-    Diag *= noprime(Diag2);
+    if(Op2_ != nullptr)
+    {
+      toTie = noprime(findtype(*Op2_,Site));
+      auto Diag2 = (*Op2_) * delta(toTie,prime(toTie),prime(toTie,2));
+      Diag *= noprime(Diag2);
+    }
 
     if(!LIsNull())
         {
@@ -411,7 +431,7 @@ size() const
             }
 
         size_ *= findtype(*Op1_,Site).m();
-        size_ *= findtype(*Op2_,Site).m();
+        if(Op2_ != nullptr) size_ *= findtype(*Op2_,Site).m();
         }
     return size_;
     }

@@ -113,7 +113,7 @@ LocalMPOSet(std::vector<MPOt<Tensor>> const& Op,
     using LocalMPOT = LocalMPO<Tensor>;
     for(auto n : range(lmpo_.size()))
         {
-        lmpo_[n] = LocalMPOT(Op.at(n));
+        lmpo_[n] = LocalMPOT(Op.at(n),args);
         }
     }
 
@@ -169,7 +169,7 @@ Real inline LocalMPOSet<Tensor>::
 expect(Tensor const& phi) const
     {
     Real ex_ = 0;
-    for(size_t n = 0; n < lmpo_.size(); ++n)
+    // for(size_t n = 0; n < lmpo_.size(); ++n)
     for(auto n : range(lmpo_.size()))
         {
         ex_ += lmpo_[n].expect(phi);
