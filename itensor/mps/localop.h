@@ -65,6 +65,9 @@ class LocalOp
     void
     product(Tensor const& phi, Tensor & phip) const;
 
+    Tensor
+    expanterm(Tensor const& phi, Direction dir) const;
+
     void
     localh(Tensor & phip) const;
 
@@ -260,6 +263,57 @@ product(Tensor const& phi,
         }
 
     phip.mapprime(1,0);
+    }
+
+template <class Tensor>
+Tensor inline LocalOp<Tensor>::
+expanterm(Tensor const& phi,
+        Direction dir) const
+    {
+    if(!(*this)) Error("LocalOp is null");
+    if(Op2_ != nullptr) Error("Two-site DMRG does not need expanterm");
+
+    auto& Op1 = *Op1_;
+    Tensor phip;
+
+    if(dir == Fromleft)
+    {
+      if(LIsNull())
+          {
+          phip = phi;
+          phip *= Op1;
+          }
+      else
+          {
+          phip = phi * L();
+          phip *= Op1;
+          }
+      phip.mapprime(1,0);
+      auto wb = commonIndex(Op1,phip,Link);
+      auto mb = commonIndex(phi,R(),Link);
+      auto comb = combiner(wb,mb);
+      phip *= comb;
+    }
+    else
+    {
+      if(RIsNull())
+          {
+          phip = phi;
+          phip *= Op1;
+          }
+      else
+          {
+          phip = phi * R();
+          phip *= Op1;
+          }
+      phip.mapprime(1,0);
+      auto wb = commonIndex(Op1,phip,Link);
+      auto mb = commonIndex(phi,L(),Link);
+      auto comb = combiner(wb,mb);
+      phip *= comb;
+    }
+
+    return phip;
     }
 
 template <class Tensor>

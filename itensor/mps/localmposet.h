@@ -31,6 +31,10 @@ class LocalMPOSet
     product(Tensor const& phi,
             Tensor & phip) const;
 
+    Tensor
+    expanterm(Tensor const& phi,
+             Direction dir) const;
+
     void
     localh(Tensor & phip) const;
 
@@ -148,6 +152,19 @@ product(Tensor const& phi,
         lmpo_[n].product(phi,phi_n);
         phip += phi_n;
         }
+    }
+
+template <class Tensor>
+Tensor inline LocalMPOSet<Tensor>::
+expanterm(Tensor const& phi,
+        Direction dir) const
+    {
+    auto phip = lmpo_.front().expanterm(phi,dir);
+    for(auto n : range(1,lmpo_.size()))
+        {
+        phip += lmpo_[n].expanterm(phi,dir);
+        }
+    return phip;
     }
 
 template <class Tensor>

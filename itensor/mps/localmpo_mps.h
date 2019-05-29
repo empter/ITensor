@@ -48,6 +48,10 @@ class LocalMPO_MPS
     product(Tensor const& phi,
             Tensor& phip) const;
 
+    Tensor
+    expanterm(Tensor const& phi, Direction dir) const
+        { return lmpo_.expanterm(phi,dir); }
+
     Real
     expect(Tensor const& phi) const { return lmpo_.expect(phi); }
 

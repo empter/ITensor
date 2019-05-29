@@ -96,6 +96,10 @@ class LocalMPO
     void
     product(const Tensor& phi, Tensor& phip) const;
 
+    Tensor
+    expanterm(Tensor const& phi,
+             Direction dir) const;
+
     void
     localh(Tensor& phip) const;
 
@@ -388,6 +392,23 @@ product(const Tensor& phi, Tensor& phip) const
         {
         Error("LocalMPO is null");
         }
+    }
+
+template <class Tensor>
+Tensor inline LocalMPO<Tensor>::
+expanterm(Tensor const& phi,
+        Direction dir) const
+    {
+      Tensor term;
+      if(Op_ != 0)
+          {
+          term = lop_.expanterm(phi,dir);
+          }
+      else
+          {
+          Error("LocalMPO is null");
+          }
+      return term;
     }
 
 template <class Tensor> inline
