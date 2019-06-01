@@ -54,6 +54,7 @@ nmultMPO(MPOType const& Aorig,
     auto siB = uniqueIndex(B.A(1),A.A(1),B.A(2));
     res.Aref(1) = Tensor(siA,siB,linkInd(A,1));
 
+    //println("\n\n");
     //Print(A);
     //Print(B);
 
@@ -84,18 +85,21 @@ nmultMPO(MPOType const& Aorig,
         //Print(res.A(i));
         //Print(nfork);
 
+        //println("<>--<>--<>--<>");
+        //PAUSE;
+
         auto mid = commonIndex(res.A(i),nfork,Link);
         mid.dag();
-        auto siA = uniqueIndex(A.A(i+1),B.A(i+1),B.A(i),B.A(i+2));
+        auto siA = uniqueIndex(A.A(i+1),A.A(i),A.A(i+2),B.A(i+1));
         auto siB = uniqueIndex(B.A(i+1),B.A(i),B.A(i+2),A.A(i+1));
+        //Print(siA);
+        //Print(siB);
         res.Aref(i+1) = Tensor(mid,siA,siB,rightLinkInd(res,i+1));
-
-        //println("--------------");
         }
 
     nfork = clust * A.A(N) * B.A(N);
 
-    res.svdBond(N-1,nfork,Fromright);
+    res.svdBond(N-1,nfork,Fromright, args);
     for(auto i : range1(N))
         {
         if(i < N)
@@ -183,13 +187,15 @@ exactApplyMPO(MPOt<Tensor> const& K,
               Args const& args)
     {
     auto cutoff = args.getReal("Cutoff",1E-13);
-    auto dargs = Args{"Cutoff",cutoff};
+    auto ignore_degeneracy = args.getBool("IgnoreDegeneracy",true);
     auto maxm_set = args.defined("Maxm");
-    if(maxm_set) dargs.add("Maxm",args.getInt("Maxm"));
     auto verbose = args.getBool("Verbose",false);
     auto normalize = args.getBool("Normalize",false);
     auto siteType = getIndexType(args,"SiteType",Site);
     auto linkType = getIndexType(args,"LinkType",Link);
+
+    auto dargs = Args{"Cutoff",cutoff,"IgnoreDegeneracy",ignore_degeneracy,"Verbose",verbose};
+    if(maxm_set) dargs.add("Maxm",args.getInt("Maxm"));
 
     if(noprime(findtype(K.A(1),Site)) != findtype(psi.A(1),Site))
         {

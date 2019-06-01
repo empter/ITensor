@@ -193,8 +193,11 @@ DMRGWorker(MPSt<Tensor>& psi,
            DMRGObserver<Tensor>& obs,
            Args args = Global::args())
     {
-    const bool quiet = args.getBool("Quiet",false);
+    const bool silent = args.getBool("Silent",false);
+    const bool quiet = silent || args.getBool("Quiet",false); // silent overrules quiet
+    
     const int debug_level = args.getInt("DebugLevel",(quiet ? 0 : 1));
+    const bool ignore_degeneracy = args.getBool("IgnoreDegeneracy",false);
 
     const int N = psi.N();
     Real energy = NAN;
@@ -202,6 +205,7 @@ DMRGWorker(MPSt<Tensor>& psi,
     psi.position(1);
 
     args.add("DebugLevel",debug_level);
+    args.add("IgnoreDegeneracy",ignore_degeneracy);
     args.add("DoNormalize",true);
     
     for(int sw = 1; sw <= sweeps.nsweep(); ++sw)
@@ -268,9 +272,11 @@ DMRGWorker(MPSt<Tensor>& psi,
             } //for loop over b
 
         auto sm = sw_time.sincemark();
+        if (!silent)
+            {
         printfln("    Sweep %d/%d CPU time = %s (Wall time = %s)",
                   sw,sweeps.nsweep(),showtime(sm.time),showtime(sm.wall));
-
+            }
         if(obs.checkDone(args)) break;
     
         } //for loop over sw
