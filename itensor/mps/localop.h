@@ -81,6 +81,9 @@ class LocalOp
 
     void
     product(ITensor const& phi, ITensor & phip) const;
+    
+    void
+    localh(ITensor & phip) const;
 
     Real
     expect(ITensor const& phi) const;
@@ -302,6 +305,34 @@ product(ITensor const& phi,
         }
 
     phip.replaceTags("1","0");
+    }
+
+void inline LocalOp::
+localh(ITensor      & phip) const
+    {
+    if(!(*this)) Error("LocalOp is null");
+
+    auto& Op1 = *Op1_;
+    // auto& Op2 = *Op2_;
+
+    if(LIsNull())
+        {
+        phip = Op1;
+        if(Op2_ != nullptr) phip *= (*Op2_);
+        
+        if(!RIsNull())
+            phip *= R();
+        }
+    else
+        {
+        Phip = L();
+        
+        phip *= Op1;
+        if(Op2_ != nullptr) phip *= (*Op2_);
+
+        if(!RIsNull())
+            phip *= R();
+        }
     }
 
 Real inline LocalOp::

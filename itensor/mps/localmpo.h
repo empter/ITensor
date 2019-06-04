@@ -105,6 +105,9 @@ class LocalMPO
 
     void
     product(const ITensor& phi, ITensor& phip) const;
+    
+    void
+    localh(ITensor& phip) const;
 
     Real
     expect(const ITensor& phi) const { return lop_.expect(phi); }
@@ -381,6 +384,19 @@ product(ITensor const& phi,
 
         phip = dag(othr);
         phip *= z;
+        }
+    else
+        {
+        Error("LocalMPO is null");
+        }
+    }
+
+void inline LocalMPO::
+localh(ITensor& phip) const
+    {
+    if(Op_ != 0)
+        {
+        lop_.localh(phip);
         }
     else
         {

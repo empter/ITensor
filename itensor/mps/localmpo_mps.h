@@ -56,6 +56,9 @@ class LocalMPO_MPS
     product(ITensor const& phi,
             ITensor& phip) const;
 
+    ITensor
+    localh(ITensor& phip) const { return lmpo_.localh(phip); }
+
     Real
     expect(ITensor const& phi) const { return lmpo_.expect(phi); }
 

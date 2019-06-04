@@ -41,6 +41,9 @@ class LocalMPOSet
     product(ITensor const& phi,
             ITensor & phip) const;
 
+    void
+    localh(ITensor & phip) const;
+
     Real
     expect(ITensor const& phi) const;
 
@@ -147,6 +150,19 @@ product(ITensor const& phi,
     for(auto n : range(1,lmpo_.size()))
         {
         lmpo_[n].product(phi,phi_n);
+        phip += phi_n;
+        }
+    }
+
+void inline LocalMPOSet::
+localh(ITensor & phip) const
+    {
+    lmpo_.front().localh(phip);
+
+    ITensor phi_n;
+    for(auto n : range(1,lmpo_.size()))
+        {
+        lmpo_[n].localh(phi_n);
         phip += phi_n;
         }
     }
