@@ -22,21 +22,21 @@
 namespace itensor {
 
 //
-// The LocalMPO class projects an MPO 
+// The LocalMPO class projects an MPO
 // into the reduced Hilbert space of
 // some number of sites of an MPS.
 // (The default is 2 sites.)
 //
 //   .----...---                ----...--.
-//   |  |     |      |      |     |      | 
+//   |  |     |      |      |     |      |
 //   W1-W2-..Wj-1 - Wj - Wj+1 -- Wj+2..-WN
-//   |  |     |      |      |     |      | 
+//   |  |     |      |      |     |      |
 //   '----...---                ----...--'
 //
-// 
+//
 //  Here the W's are the site tensors
 //  of the MPO "Op" and the method position(j,psi)
-//  has been called using the MPS 'psi' as a basis 
+//  has been called using the MPS 'psi' as a basis
 //  for the projection.
 //
 //  This results in an unprojected region of
@@ -56,32 +56,32 @@ class LocalMPO
     //
     //Regular case where H is an MPO for a finite system
     //
-    LocalMPO(MPO const& H, 
+    LocalMPO(MPO const& H,
              Args const& args = Args::global());
 
     //
     //Use an MPS instead of an MPO. Equivalent to using an MPO
     //of the outer product |Psi><Psi| but much more efficient.
     //
-    LocalMPO(MPS const& Psi, 
+    LocalMPO(MPS const& Psi,
              Args const& args = Args::global());
 
     //
     //Use an MPO having boundary indices capped off by left and
-    //right boundary tensors LH and RH. Ok if one or both boundary 
+    //right boundary tensors LH and RH. Ok if one or both boundary
     //tensors are default-constructed.
     //
-    LocalMPO(const MPO& H, 
-             const ITensor& LH, 
+    LocalMPO(const MPO& H,
+             const ITensor& LH,
              const ITensor& RH,
              const Args& args = Args::global());
 
     //
     //Use an MPS with boundary indices capped off by left and right
-    //boundary tensors LP and RP. Ok if one or both boundary tensors 
+    //boundary tensors LP and RP. Ok if one or both boundary tensors
     //are default-constructed.
     //
-    LocalMPO(const MPS& Psi, 
+    LocalMPO(const MPS& Psi,
              const ITensor& LP,
              const ITensor& RP,
              const Args& args = Args::global());
@@ -92,8 +92,8 @@ class LocalMPO
     //These positions indicate the site number of the right-most MPO
     //tensor included in LH and the left-most MPO tensor included in RH.
     //
-    LocalMPO(MPO const& H, 
-             ITensor const& LH, 
+    LocalMPO(MPO const& H,
+             ITensor const& LH,
              int LHlim,
              ITensor const& RH,
              int RHlim,
@@ -110,7 +110,7 @@ class LocalMPO
     expect(const ITensor& phi) const { return lop_.expect(phi); }
 
     ITensor
-    deltaRho(const ITensor& AA, 
+    deltaRho(const ITensor& AA,
              const ITensor& comb, Direction dir) const
         { return lop_.deltaRho(AA,comb,dir); }
 
@@ -165,8 +165,8 @@ class LocalMPO
     R(int j, ITensor const& nR);
 
     const MPO&
-    H() const 
-        { 
+    H() const
+        {
         if(Op_ == 0)
             Error("LocalMPO is null or contains an MPS");
         return *Op_;
@@ -175,10 +175,10 @@ class LocalMPO
     int
     numCenter() const { return nc_; }
     void
-    numCenter(int val) 
-        { 
+    numCenter(int val)
+        {
         if(val < 1) Error("numCenter must be set >= 1");
-        nc_ = val; 
+        nc_ = val;
         }
 
     size_t
@@ -190,14 +190,14 @@ class LocalMPO
     doWrite() const { return do_write_; }
     void
     doWrite(bool val,
-            Args const& args = Args::global()) 
-        { 
+            Args const& args = Args::global())
+        {
         if(Psi_ != 0) Error("Write to disk not yet supported for LocalMPO initialized with an MPS");
         if(!do_write_ && (val == true))
             {
-            initWrite(args); 
+            initWrite(args);
             }
-        do_write_ = val; 
+        do_write_ = val;
         }
 
     std::string const&
@@ -264,7 +264,7 @@ LocalMPO()
     { }
 
 inline LocalMPO::
-LocalMPO(const MPO& H, 
+LocalMPO(const MPO& H,
          const Args& args)
     : Op_(&H),
       PH_(H.length()+2),
@@ -272,13 +272,13 @@ LocalMPO(const MPO& H,
       RHlim_(H.length()+1),
       nc_(2),
       Psi_(0)
-    { 
+    {
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
     }
 
 inline LocalMPO::
-LocalMPO(const MPS& Psi, 
+LocalMPO(const MPS& Psi,
          const Args& args)
     : Op_(0),
       PH_(Psi.length()+2),
@@ -286,13 +286,13 @@ LocalMPO(const MPS& Psi,
       RHlim_(Psi.length()+1),
       nc_(2),
       Psi_(&Psi)
-    { 
+    {
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
     }
 
 inline LocalMPO::
-LocalMPO(const MPO& H, 
+LocalMPO(const MPO& H,
          const ITensor& LH, const ITensor& RH,
          const Args& args)
     : Op_(&H),
@@ -301,17 +301,19 @@ LocalMPO(const MPO& H,
       RHlim_(H.length()+1),
       nc_(2),
       Psi_(0)
-    { 
+    {
     PH_[0] = LH;
     PH_[H.length()+1] = RH;
-    if(H.length()==2)
-        lop_.update(Op_->A(1),Op_->A(2),L(),R());
     if(args.defined("NumCenter"))
         numCenter(args.getInt("NumCenter"));
+    if(H.length()==2&&nc_==2)
+        lop_.update(Op_->A(1),Op_->A(2),L(),R());
+    if(H.length()==1&&nc_==1)
+        lop_.update(Op_->A(1),L(),R());
     }
 
 inline LocalMPO::
-LocalMPO(MPS const& Psi, 
+LocalMPO(MPS const& Psi,
          ITensor const& LP,
          ITensor const& RP,
          Args const& args)
@@ -321,7 +323,7 @@ LocalMPO(MPS const& Psi,
       RHlim_(Psi.length()+1),
       nc_(2),
       Psi_(&Psi)
-    { 
+    {
     PH_[0] = LP;
     PH_[Psi.length()+1] = RP;
     if(args.defined("NumCenter"))
@@ -329,8 +331,8 @@ LocalMPO(MPS const& Psi,
     }
 
 inline LocalMPO::
-LocalMPO(MPO const& H, 
-         ITensor const& LH, 
+LocalMPO(MPO const& H,
+         ITensor const& LH,
          int LHlim,
          ITensor const& RH,
          int RHlim,
@@ -341,28 +343,40 @@ LocalMPO(MPO const& H,
       RHlim_(RHlim),
       nc_(2),
       Psi_(0)
-    { 
+    {
     PH_.at(LHlim) = LH;
     PH_.at(RHlim) = RH;
-    if(H.length()==2) lop_.update(Op_->A(1),Op_->A(2),L(),R());
     if(args.defined("NumCenter")) numCenter(args.getInt("NumCenter"));
+    if(H.length()==2&&nc_==2) lop_.update(Op_->A(1),Op_->A(2),L(),R());
+    if(H.length()==1&&nc_==1) lop_.update(Op_->A(1),L(),R());
     }
 
 void inline LocalMPO::
-product(ITensor const& phi, 
+product(ITensor const& phi,
         ITensor& phip) const
     {
     if(Op_ != 0)
         {
         lop_.product(phi,phip);
         }
-    else 
-    if(Psi_ != 0)
+    else
+    if(Psi_ != 0 && nc_ == 2)
         {
         int b = position();
         auto othr = (!L() ? dag(prime(Psi_->A(b),"Link")) : L()*dag(prime(Psi_->A(b),"Link")));
         auto othrR = (!R() ? dag(prime(Psi_->A(b+1),"Link")) : R()*dag(prime(Psi_->A(b+1),"Link")));
         othr *= othrR;
+        auto z = (othr*phi).eltC();
+
+        phip = dag(othr);
+        phip *= z;
+        }
+    else
+    if(Psi_ != 0 && nc_ == 1)
+        {
+        int b = position();
+        auto othr = (!L() ? dag(prime(Psi_->A(b),"Link")) : L()*dag(prime(Psi_->A(b),"Link")));
+        if(R()) othr *= R();
         auto z = (othr*phi).eltC();
 
         phip = dag(othr);
@@ -400,15 +414,19 @@ position(int b, MPS const& psi)
     setRHlim(b+nc_); //not redundant since RHlim_ could be < b+nc_
 
 #ifdef DEBUG
-    if(nc_ != 2)
+    if(nc_ != 2 || nc_ != 1)
         {
-        Error("LocalOp only supports 2 center sites currently");
+        Error("LocalOp only supports 1 or 2 center sites currently");
         }
 #endif
 
-    if(Op_ != 0) //normal MPO case
+    if(Op_ != 0 && nc_ == 2) //normal MPO case
         {
         lop_.update(Op_->A(b),Op_->A(b+1),L(),R());
+        }
+    if(Op_ != 0 && nc_ == 1)
+        {
+        lop_.update(Op_->A(b),L(),R());
         }
     }
 
@@ -423,16 +441,16 @@ position() const
     }
 
 inline void LocalMPO::
-shift(int j, 
-      Direction dir, 
+shift(int j,
+      Direction dir,
       ITensor const& A)
     {
     if(!(*this)) Error("LocalMPO is null");
 
 #ifdef DEBUG
-    if(nc_ != 2)
+    if(nc_ != 2 || nc_ != 1)
         {
-        Error("LocalOp only supports 2 center sites currently");
+        Error("LocalOp only supports 1 or 2 center sites currently");
         }
 #endif
 
@@ -451,11 +469,12 @@ shift(int j,
         setLHlim(j);
         setRHlim(j+nc_+1);
 
-        lop_.update(Op_->A(j+1),Op_->A(j+2),L(),R());
+        if(nc_ == 2) lop_.update(Op_->A(j+1),Op_->A(j+2),L(),R());
+        if(nc_ == 1) lop_.update(Op_->A(j+1),L(),R());
         }
     else //dir == Fromright
         {
-        if((j+1) != LHlim_)
+        if((j+1) != RHlim_)
             {
             std::cout << "j+1 = " << (j+1) << ", RHlim_ = " << RHlim_ << std::endl;
             Error("Can only shift at RHlim_");
@@ -468,7 +487,8 @@ shift(int j,
         setLHlim(j-nc_-1);
         setRHlim(j);
 
-        lop_.update(Op_->A(j-1),Op_->A(j),L(),R());
+        if(nc_ == 2) lop_.update(Op_->A(j-1),Op_->A(j),L(),R());
+        if(nc_ == 1) lop_.update(Op_->A(j-1),L(),R());
         }
     }
 
@@ -565,7 +585,7 @@ setLHlim(int val)
         PH_.at(LHlim_) = ITensor();
         }
     LHlim_ = val;
-    if(LHlim_ < 1) 
+    if(LHlim_ < 1)
         {
         //Set to null tensor and return
         PH_.at(LHlim_) = ITensor();
@@ -593,7 +613,7 @@ setRHlim(int val)
         PH_.at(RHlim_) = ITensor();
         }
     RHlim_ = val;
-    if(RHlim_ > Op_->length()) 
+    if(RHlim_ > Op_->length())
         {
         //Set to null tensor and return
         PH_.at(RHlim_) = ITensor();

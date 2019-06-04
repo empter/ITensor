@@ -26,7 +26,7 @@ class LocalMPO_MPS
     //std::vector<MPS> const* psis_ = nullptr;
     //LocalMPO object representing projected version
     //of the MPO Op_
-    LocalMPO lmpo_; 
+    LocalMPO lmpo_;
     //LocalMPO objects representing projected version
     //of each MPS in psis_
     std::vector<LocalMPO> lmps_;
@@ -35,11 +35,11 @@ class LocalMPO_MPS
 
     LocalMPO_MPS() { }
 
-    LocalMPO_MPS(MPO const& Op, 
+    LocalMPO_MPS(MPO const& Op,
                  std::vector<MPS > const& psis,
                  Args const& args = Args::global());
 
-    LocalMPO_MPS(MPO const& Op, 
+    LocalMPO_MPS(MPO const& Op,
                  ITensor const& LOp,
                  ITensor const& ROp,
                  std::vector<MPS> const& psis,
@@ -53,15 +53,15 @@ class LocalMPO_MPS
     //
 
     void
-    product(ITensor const& phi, 
+    product(ITensor const& phi,
             ITensor& phip) const;
 
     Real
     expect(ITensor const& phi) const { return lmpo_.expect(phi); }
 
     ITensor
-    deltaRho(ITensor const& AA, 
-             ITensor const& comb, 
+    deltaRho(ITensor const& AA,
+             ITensor const& comb,
              Direction dir) const
         { return lmpo_.deltaRho(AA,comb,dir); }
 
@@ -96,17 +96,17 @@ LocalMPO_MPS(MPO const& Op,
   : Op_(&Op),
     lmps_(psis.size()),
     weight_(args.getReal("Weight",1))
-    { 
-    lmpo_ = LocalMPO(Op);
+    {
+    lmpo_ = LocalMPO(Op,args);
 
     for(auto j : range(lmps_.size()))
         {
-        lmps_[j] = LocalMPO(psis[j]);
+        lmps_[j] = LocalMPO(psis[j],args);
         }
     }
 
 inline LocalMPO_MPS::
-LocalMPO_MPS(MPO const& Op, 
+LocalMPO_MPS(MPO const& Op,
              ITensor const& LOp,
              ITensor const& ROp,
              std::vector<MPS> const& psis,
@@ -116,8 +116,8 @@ LocalMPO_MPS(MPO const& Op,
   : Op_(&Op),
     lmps_(psis.size()),
     weight_(args.getReal("Weight",1))
-    { 
-    lmpo_ = LocalMPO(Op,LOp,ROp);
+    {
+    lmpo_ = LocalMPO(Op,LOp,ROp,args);
 #ifdef DEBUG
     if(Lpsi.size() != psis.size()) Error("Lpsi must have same number of elements as psis");
     if(Rpsi.size() != psis.size()) Error("Rpsi must have same number of elements as psis");
@@ -125,12 +125,12 @@ LocalMPO_MPS(MPO const& Op,
 
     for(auto j : range(lmps_.size()))
         {
-        lmps_[j] = LocalMPO(psis[j],Lpsi[j],Rpsi[j]);
+        lmps_[j] = LocalMPO(psis[j],Lpsi[j],Rpsi[j],args);
         }
     }
 
 void inline LocalMPO_MPS::
-product(ITensor const& phi, 
+product(ITensor const& phi,
         ITensor & phip) const
     {
     lmpo_.product(phi,phip);

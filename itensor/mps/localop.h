@@ -24,7 +24,7 @@ namespace itensor {
 // The LocalOp class represents
 // an MPO or other operator that
 // has been projected into the
-// reduced Hilbert space of 
+// reduced Hilbert space of
 // two sites of an MPS.
 //
 //   .-              -.
@@ -57,13 +57,21 @@ class LocalOp
 
     LocalOp();
 
-    LocalOp(ITensor const& Op1, 
+    LocalOp(ITensor const& Op1,
+            Args const& args = Args::global());
+
+    LocalOp(ITensor const& Op1,
             ITensor const& Op2,
             Args const& args = Args::global());
 
-    LocalOp(ITensor const& Op1, 
-            ITensor const& Op2, 
-            ITensor const& L, 
+    LocalOp(ITensor const& Op1,
+            ITensor const& L,
+            ITensor const& R,
+            Args const& args = Args::global());
+
+    LocalOp(ITensor const& Op1,
+            ITensor const& Op2,
+            ITensor const& L,
             ITensor const& R,
             Args const& args = Args::global());
 
@@ -78,8 +86,8 @@ class LocalOp
     expect(ITensor const& phi) const;
 
     ITensor
-    deltaRho(ITensor const& rho, 
-             ITensor const& combine, 
+    deltaRho(ITensor const& rho,
+             ITensor const& combine,
              Direction dir) const;
 
     ITensor
@@ -93,38 +101,46 @@ class LocalOp
     //
 
     void
+    update(ITensor const& Op1);
+
+    void
     update(ITensor const& Op1, ITensor const& Op2);
 
     void
-    update(ITensor const& Op1, 
-           ITensor const& Op2, 
-           ITensor const& L, 
+    update(ITensor const& Op1,
+           ITensor const& L,
+           ITensor const& R);
+
+    void
+    update(ITensor const& Op1,
+           ITensor const& Op2,
+           ITensor const& L,
            ITensor const& R);
 
     ITensor const&
-    Op1() const 
-        { 
+    Op1() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *Op1_;
         }
 
     ITensor const&
-    Op2() const 
-        { 
+    Op2() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *Op2_;
         }
 
     ITensor const&
-    L() const 
-        { 
+    L() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *L_;
         }
 
     ITensor const&
-    R() const 
-        { 
+    R() const
+        {
         if(!(*this)) Error("LocalOp is default constructed");
         return *R_;
         }
@@ -147,13 +163,26 @@ LocalOp()
     L_(nullptr),
     R_(nullptr),
     size_(-1)
-    { 
+    {
+    }
+
+inline LocalOp::
+LocalOp(const ITensor& Op1,
+        const Args& args)
+    :
+    Op1_(nullptr),
+    Op2_(nullptr),
+    L_(nullptr),
+    R_(nullptr),
+    size_(-1)
+    {
+    update(Op1);
     }
 
 inline LocalOp::
 LocalOp(const ITensor& Op1, const ITensor& Op2,
         const Args& args)
-    : 
+    :
     Op1_(nullptr),
     Op2_(nullptr),
     L_(nullptr),
@@ -164,10 +193,24 @@ LocalOp(const ITensor& Op1, const ITensor& Op2,
     }
 
 inline LocalOp::
-LocalOp(const ITensor& Op1, const ITensor& Op2, 
+LocalOp(const ITensor& Op1,
         const ITensor& L, const ITensor& R,
         const Args& args)
-    : 
+    :
+    Op1_(nullptr),
+    Op2_(nullptr),
+    L_(nullptr),
+    R_(nullptr),
+    size_(-1)
+    {
+    update(Op1,L,R);
+    }
+
+inline LocalOp::
+LocalOp(const ITensor& Op1, const ITensor& Op2,
+        const ITensor& L, const ITensor& R,
+        const Args& args)
+    :
     Op1_(nullptr),
     Op2_(nullptr),
     L_(nullptr),
@@ -175,6 +218,15 @@ LocalOp(const ITensor& Op1, const ITensor& Op2,
     size_(-1)
     {
     update(Op1,Op2,L,R);
+    }
+
+void inline LocalOp::
+update(const ITensor& Op1)
+    {
+    Op1_ = &Op1;
+    L_ = nullptr;
+    R_ = nullptr;
+    size_ = -1;
     }
 
 void inline LocalOp::
@@ -188,7 +240,16 @@ update(const ITensor& Op1, const ITensor& Op2)
     }
 
 void inline LocalOp::
-update(const ITensor& Op1, const ITensor& Op2, 
+update(const ITensor& Op1,
+       const ITensor& L, const ITensor& R)
+    {
+    update(Op1);
+    L_ = &L;
+    R_ = &R;
+    }
+
+void inline LocalOp::
+update(const ITensor& Op1, const ITensor& Op2,
        const ITensor& L, const ITensor& R)
     {
     update(Op1,Op2);
@@ -211,22 +272,22 @@ RIsNull() const
     }
 
 void inline LocalOp::
-product(ITensor const& phi, 
+product(ITensor const& phi,
         ITensor      & phip) const
     {
     if(!(*this)) Error("LocalOp is null");
 
     auto& Op1 = *Op1_;
-    auto& Op2 = *Op2_;
+    // auto& Op2 = *Op2_;
 
     if(LIsNull())
         {
         phip = phi;
 
-        if(!RIsNull()) 
+        if(!RIsNull())
             phip *= R(); //m^3 k d
 
-        phip *= Op2; //m^2 k^2
+        if(Op2_ != nullptr) phip *= (*Op2_); //m^2 k^2
         phip *= Op1; //m^2 k^2
         }
     else
@@ -234,9 +295,9 @@ product(ITensor const& phi,
         phip = phi * L(); //m^3 k d
 
         phip *= Op1; //m^2 k^2
-        phip *= Op2; //m^2 k^2
+        if(Op2_ != nullptr) phip *= (*Op2_); //m^2 k^2
 
-        if(!RIsNull()) 
+        if(!RIsNull())
             phip *= R();
         }
 
@@ -252,8 +313,8 @@ expect(const ITensor& phi) const
     }
 
 ITensor inline LocalOp::
-deltaRho(ITensor const& AA, 
-         ITensor const& combine, 
+deltaRho(ITensor const& AA,
+         ITensor const& combine,
          Direction dir) const
     {
     auto drho = AA;
@@ -265,7 +326,8 @@ deltaRho(ITensor const& AA,
     else //dir == Fromright
         {
         if(!RIsNull()) drho *= R();
-        drho *= (*Op2_);
+        if(Op2_ != nullptr) drho *= (*Op2_);
+        else drho *= (*Op1_);
         }
     drho.noPrime();
     drho = combine * drho;
@@ -286,13 +348,13 @@ diag() const
     if(!(*this)) Error("LocalOp is null");
 
     auto& Op1 = *Op1_;
-    auto& Op2 = *Op2_;
+    // auto& Op2 = *Op2_;
 
     //lambda helper function:
     auto findIndPair = [](ITensor const& T) {
         for(auto& s : T.inds())
             {
-            if(s.primeLevel() == 0 && hasIndex(T,prime(s))) 
+            if(s.primeLevel() == 0 && hasIndex(T,prime(s)))
                 {
                 return s;
                 }
@@ -304,9 +366,12 @@ diag() const
     auto Diag = Op1 * delta(toTie,prime(toTie),prime(toTie,2));
     Diag.noPrime();
 
-    toTie = findIndex(Op2,"Site,0");
-    auto Diag2 = Op2 * delta(toTie,prime(toTie),prime(toTie,2));
-    Diag *= noPrime(Diag2);
+    if(Op2_ != nullptr)
+    {
+      toTie = findIndex(*Op2_,"Site,0");
+      auto Diag2 = (*Op2_) * delta(toTie,prime(toTie),prime(toTie,2));
+      Diag *= noPrime(Diag2);
+    }
 
     if(!LIsNull())
         {
@@ -349,10 +414,10 @@ size() const
     if(!(*this)) Error("LocalOp is default constructed");
     if(size_ == size_t(-1))
         {
-        //Calculate linear size of this 
+        //Calculate linear size of this
         //op as a square matrix
         size_ = 1;
-        if(!LIsNull()) 
+        if(!LIsNull())
             {
             for(auto& I : L().inds())
                 {
@@ -363,7 +428,7 @@ size() const
                     }
                 }
             }
-        if(!RIsNull()) 
+        if(!RIsNull())
             {
             for(auto& I : R().inds())
                 {
@@ -376,7 +441,7 @@ size() const
             }
 
         size_ *= dim(findIndex(*Op1_,"Site,0"));
-        size_ *= dim(findIndex(*Op2_,"Site,0"));
+        if(Op2_ != nullptr) size_ *= dim(findIndex(*Op2_,"Site,0"));
         }
     return size_;
     }

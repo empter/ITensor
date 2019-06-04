@@ -30,42 +30,42 @@ class LocalMPOSet
     LocalMPOSet(std::vector<MPO> const& Op,
                 Args const& args = Args::global());
 
-    LocalMPOSet(std::vector<MPO> const& H, 
-                std::vector<ITensor> const& LH, 
+    LocalMPOSet(std::vector<MPO> const& H,
+                std::vector<ITensor> const& LH,
                 int LHlim,
                 std::vector<ITensor> const& RH,
                 int RHlim,
                 Args const& args = Args::global());
 
     void
-    product(ITensor const& phi, 
+    product(ITensor const& phi,
             ITensor & phip) const;
 
     Real
     expect(ITensor const& phi) const;
 
     ITensor
-    deltaRho(ITensor const& AA, 
-             ITensor const& comb, 
+    deltaRho(ITensor const& AA,
+             ITensor const& comb,
              Direction dir) const;
 
     ITensor
     diag() const;
 
     void
-    position(int b, 
+    position(int b,
              MPS const& psi);
 
     std::vector<ITensor>
-    L() const 
-        { 
+    L() const
+        {
         auto L = std::vector<ITensor>(lmpo_.size());
         for(auto n : range(lmpo_)) L.at(n) = lmpo_.at(n).L();
         return L;
         }
     std::vector<ITensor>
-    R() const 
-        { 
+    R() const
+        {
         auto R = std::vector<ITensor>(lmpo_.size());
         for(auto n : range(lmpo_)) R.at(n) = lmpo_.at(n).R();
         return R;
@@ -73,12 +73,12 @@ class LocalMPOSet
 
     void
     L(std::vector<ITensor> const& nL)
-        { 
+        {
         for(auto n : range(lmpo_)) lmpo_.at(n).L(nL.at(n));
         }
     void
     R(std::vector<ITensor> const& nR)
-        { 
+        {
         for(auto n : range(lmpo_)) lmpo_.at(n).R(nR.at(n));
         }
 
@@ -102,8 +102,8 @@ class LocalMPOSet
     bool
     doWrite() const { return lmpo_.front().doWrite(); }
     void
-    doWrite(bool val, Args const& args = Args::global()) 
-        { 
+    doWrite(bool val, Args const& args = Args::global())
+        {
         for(auto& lm : lmpo_) lm.doWrite(val,args);
         }
 
@@ -114,23 +114,23 @@ LocalMPOSet(std::vector<MPO> const& Op,
             Args const& args)
   : Op_(&Op),
     lmpo_(Op.size())
-    { 
+    {
     for(auto n : range(lmpo_.size()))
         {
-        lmpo_[n] = LocalMPO(Op.at(n));
+        lmpo_[n] = LocalMPO(Op.at(n),args);
         }
     }
 
 inline LocalMPOSet::
-LocalMPOSet(std::vector<MPO> const& H, 
-            std::vector<ITensor> const& LH, 
+LocalMPOSet(std::vector<MPO> const& H,
+            std::vector<ITensor> const& LH,
             int LHlim,
             std::vector<ITensor> const& RH,
             int RHlim,
             Args const& args)
   : Op_(&H),
     lmpo_(H.size())
-    { 
+    {
     for(auto n : range(lmpo_.size()))
         {
         lmpo_[n] = LocalMPO(H.at(n),LH.at(n),LHlim,RH.at(n),RHlim,args);
@@ -138,7 +138,7 @@ LocalMPOSet(std::vector<MPO> const& H,
     }
 
 void inline LocalMPOSet::
-product(ITensor const& phi, 
+product(ITensor const& phi,
         ITensor & phip) const
     {
     lmpo_.front().product(phi,phip);
@@ -165,7 +165,7 @@ expect(ITensor const& phi) const
 
 ITensor inline LocalMPOSet::
 deltaRho(ITensor const& AA,
-         ITensor const& comb, 
+         ITensor const& comb,
          Direction dir) const
     {
     ITensor delta = lmpo_.front().deltaRho(AA,comb,dir);
@@ -188,7 +188,7 @@ diag() const
     }
 
 void inline LocalMPOSet::
-position(int b, 
+position(int b,
          MPS const& psi)
     {
     for(auto n : range(lmpo_.size()))
