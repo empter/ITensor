@@ -84,6 +84,9 @@ class LocalOp
     
     void
     localh(ITensor & phip) const;
+    
+    ITensor
+    expanterm(ITensor const& phi, Direction dir) const;
 
     Real
     expect(ITensor const& phi) const;
@@ -308,7 +311,7 @@ product(ITensor const& phi,
     }
 
 void inline LocalOp::
-localh(ITensor      & phip) const
+localh(ITensor& phip) const
     {
     if(!(*this)) Error("LocalOp is null");
 
@@ -325,7 +328,7 @@ localh(ITensor      & phip) const
         }
     else
         {
-        Phip = L();
+        phip = L();
         
         phip *= Op1;
         if(Op2_ != nullptr) phip *= (*Op2_);
@@ -333,6 +336,55 @@ localh(ITensor      & phip) const
         if(!RIsNull())
             phip *= R();
         }
+    }
+
+ITensor inline LocalOp::
+expanterm(ITensor const& phi, Direction dir) const
+    {
+    if(!(*this)) Error("LocalOp is null");
+    if(Op2_ != nullptr) Error("Two-site DMRG does not need expanterm");
+
+    auto& Op1 = *Op1_;
+    ITensor phip;
+
+    if(dir == Fromleft)
+    {
+      if(LIsNull())
+          {
+          phip = phi;
+          phip *= Op1;
+          }
+      else
+          {
+          phip = phi * L();
+          phip *= Op1;
+          }
+      phip.replaceTags("1","0");
+      auto wb = commonIndex(Op1,phip,"Link");
+      auto mb = commonIndex(phi,R(),"Link");
+      auto [Cmb,cmb] = combiner(wb,mb);
+      phip *= Cmb;
+    }
+    else
+    {
+      if(RIsNull())
+          {
+          phip = phi;
+          phip *= Op1;
+          }
+      else
+          {
+          phip = phi * R();
+          phip *= Op1;
+          }
+      phip.replaceTags("1","0");
+      auto wb = commonIndex(Op1,phip,"Link");
+      auto mb = commonIndex(phi,L(),"Link");
+      auto [Cmb,cmb] = combiner(wb,mb);
+      phip *= Cmb;
+    }
+
+    return phip;
     }
 
 Real inline LocalOp::

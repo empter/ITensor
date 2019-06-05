@@ -108,6 +108,9 @@ class LocalMPO
     
     void
     localh(ITensor& phip) const;
+    
+    ITensor
+    expanterm(ITensor const& phi, Direction dir) const;
 
     Real
     expect(const ITensor& phi) const { return lop_.expect(phi); }
@@ -402,6 +405,21 @@ localh(ITensor& phip) const
         {
         Error("LocalMPO is null");
         }
+    }
+
+ITensor inline LocalMPO::
+expanterm(ITensor const& phi, Direction dir) const
+    {
+      ITensor term;
+      if(Op_ != 0)
+          {
+          term = lop_.expanterm(phi,dir);
+          }
+      else
+          {
+          Error("LocalMPO is null");
+          }
+      return term;
     }
 
 void inline LocalMPO::

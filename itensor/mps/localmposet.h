@@ -43,6 +43,10 @@ class LocalMPOSet
 
     void
     localh(ITensor & phip) const;
+    
+    ITensor
+    expanterm(ITensor const& phi, Direction dir) const
+        { Error("expanterm does not support lazily summed MPO."); return phi; }
 
     Real
     expect(ITensor const& phi) const;
