@@ -59,6 +59,9 @@ class LocalMPO_MPS
     void
     localh(ITensor& phip) const { lmpo_.localh(phip); }
     
+    void
+    localhnext(ITensor& phip, Direction dir) const { lmpo_.localhnext(phip,dir); }
+    
     ITensor
     expanterm(ITensor const& phi, Direction dir) const
         { return lmpo_.expanterm(phi,dir); }

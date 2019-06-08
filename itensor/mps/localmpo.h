@@ -109,6 +109,9 @@ class LocalMPO
     void
     localh(ITensor& phip) const;
     
+    void
+    localhnext(ITensor& phip, Direction dir) const;
+    
     ITensor
     expanterm(ITensor const& phi, Direction dir) const;
 
@@ -400,6 +403,20 @@ localh(ITensor& phip) const
     if(Op_ != 0)
         {
         lop_.localh(phip);
+        }
+    else
+        {
+        Error("LocalMPO is null");
+        }
+    }
+
+void inline LocalMPO::
+localhnext(ITensor& phip, Direction dir) const
+    {
+    if(Op_ != 0)
+        {
+        if(dir == Fromleft) lop_.localhnext(phip,PH_[RHlim_-1],dir);
+        else lop_.localhnext(phip,PH_[LHlim_+1],dir);
         }
     else
         {

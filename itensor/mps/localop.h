@@ -85,6 +85,9 @@ class LocalOp
     void
     localh(ITensor & phip) const;
     
+    void
+    localhnext(ITensor & phip, ITensor const& lr, Direction dir) const;
+    
     ITensor
     expanterm(ITensor const& phi, Direction dir) const;
 
@@ -335,6 +338,25 @@ localh(ITensor& phip) const
 
         if(!RIsNull())
             phip *= R();
+        }
+    }
+
+void inline LocalOp::
+localhnext(ITensor& phip, ITensor const& lr, Direction dir) const
+    {
+    if(!(*this)) Error("LocalOp is null");
+    
+    if(dir == Fromleft)
+        {
+        phip = L();// t-site:L()*op1*R(previous);s-site:L()*R(previous)
+        if(Op2_ != nullptr) phip *= *(Op1_);
+        phip *= lr;
+        }
+    else
+        {
+        phip = R();// t-site:L(previous)*op2*R();s-site:L(previous)*R()
+        if(Op2_ != nullptr) phip *= *(Op2_);
+        phip *= lr;
         }
     }
 

@@ -44,6 +44,9 @@ class LocalMPOSet
     void
     localh(ITensor & phip) const;
     
+    void
+    localhnext(ITensor & phip, Direction dir) const;
+    
     ITensor
     expanterm(ITensor const& phi, Direction dir) const
         { Error("expanterm does not support lazily summed MPO."); return phi; }
@@ -167,6 +170,19 @@ localh(ITensor & phip) const
     for(auto n : range(1,lmpo_.size()))
         {
         lmpo_[n].localh(phi_n);
+        phip += phi_n;
+        }
+    }
+
+void inline LocalMPOSet::
+localhnext(ITensor & phip, Direction dir) const
+    {
+    lmpo_.front().localhnext(phip,dir);
+
+    ITensor phi_n;
+    for(auto n : range(1,lmpo_.size()))
+        {
+        lmpo_[n].localhnext(phi_n,dir);
         phip += phi_n;
         }
     }
