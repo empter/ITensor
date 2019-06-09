@@ -354,9 +354,9 @@ localhnext(ITensor& phip, ITensor const& lr, Direction dir) const
         }
     else
         {
-        phip = R();// t-site:L(previous)*op2*R();s-site:L(previous)*R()
+        phip = lr;// t-site:L(previous)*op2*R();s-site:L(previous)*R()
         if(Op2_ != nullptr) phip *= *(Op2_);
-        phip *= lr;
+        phip *= R();
         }
     }
 
