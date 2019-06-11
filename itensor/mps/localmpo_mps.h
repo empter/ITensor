@@ -57,6 +57,10 @@ class LocalMPO_MPS
             ITensor& phip) const;
 
     void
+    productnext(ITensor const& phi, 
+                ITensor& phip, Direction dir) const { lmpo_.productnext(phi,phip,dir); }
+
+    void
     localh(ITensor& phip) const { lmpo_.localh(phip); }
     
     void

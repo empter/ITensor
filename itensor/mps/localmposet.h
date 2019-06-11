@@ -42,6 +42,10 @@ class LocalMPOSet
             ITensor & phip) const;
 
     void
+    productnext(ITensor const& phi,
+                ITensor & phip, Direction dir) const;
+
+    void
     localh(ITensor & phip) const;
     
     void
@@ -157,6 +161,20 @@ product(ITensor const& phi,
     for(auto n : range(1,lmpo_.size()))
         {
         lmpo_[n].product(phi,phi_n);
+        phip += phi_n;
+        }
+    }
+
+void inline LocalMPOSet::
+productnext(ITensor const& phi,
+            ITensor & phip, Direction dir) const
+    {
+    lmpo_.front().productnext(phi,phip,dir);
+
+    ITensor phi_n;
+    for(auto n : range(1,lmpo_.size()))
+        {
+        lmpo_[n].productnext(phi,phi_n,dir);
         phip += phi_n;
         }
     }

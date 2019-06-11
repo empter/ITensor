@@ -107,6 +107,9 @@ class LocalMPO
     product(const ITensor& phi, ITensor& phip) const;
     
     void
+    productnext(const ITensor& phi, ITensor& phip, Direction dir) const;
+    
+    void
     localh(ITensor& phip) const;
     
     void
@@ -390,6 +393,21 @@ product(ITensor const& phi,
 
         phip = dag(othr);
         phip *= z;
+        }
+    else
+        {
+        Error("LocalMPO is null");
+        }
+    }
+
+void inline LocalMPO::
+productnext(ITensor const& phi,
+            ITensor& phip, Direction dir) const
+    {
+    if(Op_ != 0)
+        {
+        if(dir == Fromleft) lop_.productnext(phi,phip,PH_[RHlim_-1],dir);
+        else lop_.productnext(phi,phip,PH_[LHlim_+1],dir);
         }
     else
         {
