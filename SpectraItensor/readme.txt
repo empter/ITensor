@@ -1,0 +1,3 @@
+Port from https://github.com/yixuan/spectra
+NonSymRealEigsSolver working with itensor LocalMPO class, it can only return Ground state of a LocalMPO object. Current version only works with real H and psi.
+Note: DMRG is not compatible with non-Hermitian systems due to the wrong effective Hamiltonian which should be constructed from both right psi_r and left psi_l wave-functions but psi_l is not simply dag(psi_r). So it's not possible to solve non-Hermitian systems right now.
