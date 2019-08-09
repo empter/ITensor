@@ -3,6 +3,7 @@
 #include "sample/Heisenberg.h"
 #include "itensor/mps/sites/spinhalf.h"
 #include "itensor/mps/localmpo.h"
+#include "itensor/mps/autompo.h"
 
 using namespace itensor;
 using namespace std;
@@ -172,6 +173,27 @@ SECTION("IQFourSite")
 
     }
 
+SECTION("Davidson (Custom Linear Map)")
+    {
+    auto a1 = Index(3,"Site,a1");
+    auto a2 = Index(4,"Site,a2");
+    auto a3 = Index(3,"Site,a3");
+
+    auto A = randomITensor(prime(a1),prime(a2),prime(a3),a1,a2,a3);
+    A = 0.5*(A + swapPrime(dag(A),0,1));
+    auto x = randomITensor(a1,a2,a3);
+
+    // ITensorMap is defined above, it simply wraps an ITensor that is of the
+    // form of a matrix (i.e. has indices of the form {i,j,k,...,i',j',k',...})
+    auto lambda = davidson(ITensorMap(A),x,{"MaxIter",50,"ErrGoal",1e-10});
+
+    // Run it again as a "restart"
+    lambda = davidson(ITensorMap(A),x,{"MaxIter",50,"ErrGoal",1e-10});
+ 
+    CHECK_CLOSE(norm(noPrime(A*x)-lambda*x)/norm(x),0.0);
+
+    }
+
 SECTION("GMRES (ITensor, Real)")
     {
     auto a1 = Index(3,"Site,a1");
@@ -224,6 +246,123 @@ SECTION("GMRES (ITensor, QN)")
     gmres(ITensorMap(A),b,x,{"MaxIter",100,"DebugLevel",0,"ErrGoal",1e-10});
 
     CHECK_CLOSE(norm((A*x).replaceTags("1","0")-b)/norm(b),0.0);
+
+    }
+
+SECTION("Arnoldi (No QN)")
+    {
+    const int N = 50;
+    const int Nc = N/2;
+    SpinHalf sites(N,{"ConserveQNs=",false});
+
+    // Create random MPO
+    auto ampo = AutoMPO(sites);
+    for(int j = 1; j < N; ++j)
+        {
+        ampo += 0.5,"S+",j,"S-",j+1;
+        ampo += 0.5,"S-",j,"S+",j+1;
+        ampo +=     "Sz",j,"Sz",j+1;
+        }
+    auto H = toMPO(ampo);
+    for(int j = 1; j <= N; ++j)
+      {
+      H.ref(j).randomize();
+      H.ref(j) /= norm(H(j));
+      }
+    auto normH = sqrt(trace(H,prime(H)));
+    for(int j = 1; j <= N; ++j)
+      H.ref(j) /= pow(normH,1.0/N);
+
+    // Create random starting MPS
+    auto initState = InitState(sites);
+    for(int i = 1; i <= N; ++i)
+        initState.set(i,i%2==1 ? "Up" : "Dn");
+    auto psi = MPS(initState);
+    for(int j = 1; j < 2; ++j)
+      {
+      psi = applyMPO(H,psi);
+      psi.noPrime();
+      psi.normalize();
+      }
+    for(int j = 1; j <= N; ++j)
+      {
+      psi.ref(j).randomize();
+      psi.ref(j) /= norm(psi(j));
+      }
+
+    psi.position(Nc);
+    psi.normalize();
+
+    LocalMPO PH(H);
+
+    PH.position(Nc,psi);
+
+    auto x = psi(Nc) * psi(Nc+1);
+    x.randomize();
+
+    auto lambda = arnoldi(PH,x,{"MaxIter",20,"ErrGoal",1e-14,"DebugLevel",0,"WhichEig","LargestMagnitude"});
+    auto PHx = x;
+    PH.product(x,PHx);
+
+    CHECK_CLOSE(norm(PHx-lambda*x)/norm(PHx),0.0);
+  }
+
+SECTION("Arnoldi (QN)")
+    {
+    const int N = 50;
+    const int Nc = N/2;
+    SpinHalf sites(N);
+
+    // Create random MPO
+    auto ampo = AutoMPO(sites);
+    for(int j = 1; j < N; ++j)
+        {
+        ampo += 0.5,"S+",j,"S-",j+1;
+        ampo += 0.5,"S-",j,"S+",j+1;
+        ampo +=     "Sz",j,"Sz",j+1;
+        }
+    auto H = toMPO(ampo);
+    for(int j = 1; j <= N; ++j)
+      {
+      H.ref(j).randomize();
+      H.ref(j) /= norm(H(j));
+      }
+    auto normH = sqrt(trace(H,prime(H)));
+    for(int j = 1; j <= N; ++j)
+      H.Aref(j) /= pow(normH,1.0/N);
+
+    // Create random starting MPS
+    auto initState = InitState(sites);
+    for(int i = 1; i <= N; ++i)
+        initState.set(i,i%2==1 ? "Up" : "Dn");
+    auto psi = MPS(initState);
+    for(int j = 1; j < 2; ++j)
+      {
+      psi = applyMPO(H,psi);
+      psi.noPrime();
+      psi.normalize();
+      }
+    for(int j = 1; j <= N; ++j)
+      {
+      psi.ref(j).randomize();
+      psi.ref(j) /= norm(psi(j));
+      }
+    psi.position(Nc);
+    psi.normalize();
+
+    LocalMPO PH(H);
+
+    psi.position(Nc);
+    PH.position(Nc,psi);
+
+    auto x = psi.A(Nc) * psi.A(Nc+1);
+    x.randomize();
+
+    auto lambda = arnoldi(PH,x,{"MaxIter",20,"ErrGoal",1e-14,"DebugLevel",0,"WhichEig","LargestMagnitude"});
+    auto PHx = x;
+    PH.product(x,PHx);
+
+    CHECK_CLOSE(norm(PHx-lambda*x)/norm(PHx),0.0);
 
     }
 
