@@ -1,5 +1,5 @@
-#ifndef __ITENSOR_ARNOLDI_H
-#define __ITENSOR_ARNOLDI_H
+#ifndef __ITENSOR_ARNOLDIR_H
+#define __ITENSOR_ARNOLDIR_H
 #include <math.h>
 #include "itensor/all_mps.h"
 #include "GenEigsSolver.h"
@@ -9,14 +9,14 @@ namespace itensor {
 
 //
 // Use the Arnoldi algorithm to find the 
-// eigenvector of the Hermitian matrix A with minimal eigenvalue.
+// eigenvector of the nonHermitian matrix A with minimal eigenvalue.
 // (BigMatrixT objects must implement the methods product, size and diag.)
 // Returns the minimal eigenvalue lambda such that
 // A phi = lambda phi.
 //
 template <class BigMatrixT>
 Real 
-arnoldi(BigMatrixT const& A, 
+arnoldiR(BigMatrixT const& A, 
          ITensor& phi,
          Args const& args = Args::global())
     {

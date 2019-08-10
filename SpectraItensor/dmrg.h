@@ -400,7 +400,7 @@ DMRGWorker(MPS & psi,
 
             auto phi = psi(b)*psi(b+1);
 
-            energy = arnoldi(PH,phi,args);
+            energy = arnoldiR(PH,phi,args);
             
             TIMER_START(40);
             auto spec = psi.svdBond(b,phi,(ha==1?Fromleft:Fromright),PH,args);
