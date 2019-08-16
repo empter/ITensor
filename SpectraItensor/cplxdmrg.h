@@ -27,14 +27,14 @@
 namespace itensor {
 
 template<class LocalOpT>
-Real
+Cplx
 DMRGWorker(MPS & psi,
            LocalOpT & PH,
            Sweeps const& sweeps,
            Args const& args = Args::global());
 
 template<class LocalOpT>
-Real
+Cplx
 DMRGWorker(MPS & psi,
            LocalOpT & PH,
            Sweeps const& sweeps,
@@ -48,14 +48,14 @@ DMRGWorker(MPS & psi,
 //
 //DMRG with an MPO
 //
-Real inline
+Cplx inline
 dmrg(MPS & psi, 
      MPO const& H, 
      Sweeps const& sweeps,
      Args const& args = Args::global())
     {
     LocalMPO PH(H,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,args);
     return energy;
     }
 
@@ -64,7 +64,7 @@ dmrg(MPS & psi,
 //Version that takes a starting guess MPS
 //and returns the optimized MPS
 //
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(MPO const& H,
      MPS const& psi0,
      Sweeps const& sweeps,
@@ -72,13 +72,13 @@ dmrg(MPO const& H,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,H,sweeps,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
 //DMRG with an MPO and custom DMRGObserver
 //
-Real inline
+Cplx inline
 dmrg(MPS& psi, 
      MPO const& H, 
      Sweeps const& sweeps, 
@@ -86,7 +86,7 @@ dmrg(MPS& psi,
      Args const& args = Args::global())
     {
     LocalMPO PH(H,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,obs,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,obs,args);
     return energy;
     }
 
@@ -95,7 +95,7 @@ dmrg(MPS& psi,
 //Version that takes a starting guess MPS
 //and returns the optimized MPS
 //
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(MPO const& H,
      MPS const& psi0,
      Sweeps const& sweeps,
@@ -104,7 +104,7 @@ dmrg(MPO const& H,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,H,sweeps,obs,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
@@ -112,7 +112,7 @@ dmrg(MPO const& H,
 // LH - H1 - H2 - ... - HN - RH
 //(ok if one or both of LH, RH default constructed)
 //
-Real inline
+Cplx inline
 dmrg(MPS& psi, 
      MPO const& H, 
      ITensor const& LH, 
@@ -121,7 +121,7 @@ dmrg(MPS& psi,
      Args const& args = Args::global())
     {
     LocalMPO PH(H,LH,RH,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,args);
     return energy;
     }
 
@@ -132,7 +132,7 @@ dmrg(MPS& psi,
 //Version that takes a starting guess MPS
 //and returns the optimized MPS
 //
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(MPO const& H,
      ITensor const& LH,
      ITensor const& RH,
@@ -142,14 +142,14 @@ dmrg(MPO const& H,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,H,LH,RH,sweeps,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
 //DMRG with an MPO and boundary tensors LH, RH
 //and a custom observer
 //
-Real inline
+Cplx inline
 dmrg(MPS& psi, 
      MPO const& H, 
      ITensor const& LH, 
@@ -159,11 +159,11 @@ dmrg(MPS& psi,
      Args const& args = Args::global())
     {
     LocalMPO PH(H,LH,RH,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,obs,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,obs,args);
     return energy;
     }
 
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(MPO const& H,
      ITensor const& LH,
      ITensor const& RH,
@@ -174,25 +174,25 @@ dmrg(MPO const& H,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,H,LH,RH,sweeps,obs,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
 //DMRG with a set of MPOs (lazily summed)
 //(H vector is 0-indexed)
 //
-Real inline
+Cplx inline
 dmrg(MPS& psi, 
      std::vector<MPO> const& Hset, 
      Sweeps const& sweeps,
      Args const& args = Args::global())
     {
     LocalMPOSet PH(Hset,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,args);
     return energy;
     }
 
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(std::vector<MPO> const& Hset,
      MPS const& psi0,
      Sweeps const& sweeps,
@@ -200,14 +200,14 @@ dmrg(std::vector<MPO> const& Hset,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,Hset,sweeps,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
 //DMRG with a set of MPOs and a custom DMRGObserver
 //(H vector is 0-indexed)
 //
-Real inline
+Cplx inline
 dmrg(MPS& psi, 
      std::vector<MPO> const& Hset, 
      Sweeps const& sweeps, 
@@ -215,11 +215,11 @@ dmrg(MPS& psi,
      Args const& args = Args::global())
     {
     LocalMPOSet PH(Hset,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,obs,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,obs,args);
     return energy;
     }
 
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(std::vector<MPO> const& Hset,
      MPS const& psi0,
      Sweeps const& sweeps,
@@ -228,7 +228,7 @@ dmrg(std::vector<MPO> const& Hset,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,Hset,sweeps,obs,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
@@ -241,7 +241,7 @@ dmrg(std::vector<MPO> const& Hset,
 //          H + w * (|0><0| + |1><1| + ...) where |0> = psis[0], |1> = psis[1]
 //          etc.
 //
-Real inline
+Cplx inline
 dmrg(MPS& psi, 
      MPO const& H, 
      std::vector<MPS> const& psis, 
@@ -249,11 +249,11 @@ dmrg(MPS& psi,
      Args const& args = Args::global())
     {
     LocalMPO_MPS PH(H,psis,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,args);
     return energy;
     }
 
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(MPO const& H,
      std::vector<MPS> const& psis,
      MPS const& psi0,
@@ -262,7 +262,7 @@ dmrg(MPO const& H,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,H,psis,sweeps,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 //
@@ -276,7 +276,7 @@ dmrg(MPO const& H,
 //          H + w * (|0><0| + |1><1| + ...) where |0> = psis[0], |1> = psis[1]
 //          etc.
 //
-Real inline
+Cplx inline
 dmrg(MPS & psi, 
      MPO const& H, 
      std::vector<MPS> const& psis, 
@@ -285,11 +285,11 @@ dmrg(MPS & psi,
      Args const& args = Args::global())
     {
     LocalMPO_MPS PH(H,psis,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,obs,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,obs,args);
     return energy;
     }
 
-std::tuple<Real,MPS> inline
+std::tuple<Cplx,MPS> inline
 dmrg(MPO const& H,
      std::vector<MPS> const& psis,
      MPS const& psi0,
@@ -299,7 +299,7 @@ dmrg(MPO const& H,
     {
     auto psi = psi0;
     auto energy = dmrg(psi,H,psis,sweeps,obs,args);
-    return std::tuple<Real,MPS>(energy,psi);
+    return std::tuple<Cplx,MPS>(energy,psi);
     }
 
 
@@ -308,19 +308,19 @@ dmrg(MPO const& H,
 //
 
 template<class LocalOpT>
-Real
+Cplx
 DMRGWorker(MPS & psi,
            LocalOpT & PH,
            Sweeps const& sweeps,
            Args const& args)
     {
     DMRGObserver obs(psi,args);
-    Real energy = DMRGWorker(psi,PH,sweeps,obs,args);
+    Cplx energy = DMRGWorker(psi,PH,sweeps,obs,args);
     return energy;
     }
 
 template<class LocalOpT>
-Real
+Cplx
 DMRGWorker(MPS & psi,
            LocalOpT & PH,
            Sweeps const& sweeps,
@@ -353,9 +353,11 @@ DMRGWorker(MPS & psi,
         }
     const bool quiet = args.getBool("Quiet",false);
     const int debug_level = args.getInt("DebugLevel",(quiet ? 0 : 1));
+    int pass = args.getInt("JDpass",1);
+    int solver = args.getInt("JDsolver",1);
 
     const int N = length(psi);
-    Real energy = NAN;
+    Cplx energy = NAN;
 
     psi.position(1);
 
@@ -371,7 +373,7 @@ DMRGWorker(MPS & psi,
         args.add("MinDim",sweeps.mindim(sw));
         args.add("MaxDim",sweeps.maxdim(sw));
         args.add("Noise",sweeps.noise(sw));
-        args.add("MaxKrylov",sweeps.niter(sw));
+        args.add("MaxIter",sweeps.niter(sw));
 
         if(!PH.doWrite()
            && args.defined("WriteDim")
@@ -386,8 +388,9 @@ DMRGWorker(MPS & psi,
             //psi.doWrite(true);
             PH.doWrite(true,args);
             }
-
-        for(int b = 1, ha = 1; ha <= 2; sweepnext(b,ha,N))
+//psi.position(1);
+         for(int b = 1, ha = 1; ha <= 2; sweepnext(b,ha,N))
+        //for(int b = 1, ha = 2; b < N; ++b)
             {
             if(!quiet)
                 {
@@ -395,10 +398,10 @@ DMRGWorker(MPS & psi,
                 }
 
             PH.position(b,psi);
-            args.add("DMRGb",b);
-            args.add("DMRGh",ha);
 
             auto phi = psi(b)*psi(b+1);
+            args.add("DMRGb",b);
+            args.add("DMRGh",ha);
 
             arnoldiR(PH,phi,energy,args);
             
@@ -421,7 +424,7 @@ DMRGWorker(MPS & psi,
 
             args.add("AtBond",b);
             args.add("HalfSweep",ha);
-            args.add("Energy",energy); 
+            args.add("Energy",energy.real()); 
             args.add("Truncerr",spec.truncerr()); 
 
             obs.measure(args);

@@ -3,6 +3,7 @@
 #include <math.h>
 #include "itensor/all_mps.h"
 #include "GenEigsSolver.h"
+#include "CplxGenEigsSolver.h"
 
 
 namespace itensor {
@@ -15,12 +16,39 @@ namespace itensor {
 // A phi = lambda phi.
 //
 template <class BigMatrixT>
-Real 
+void
 arnoldiR(BigMatrixT const& A, 
          ITensor& phi,
+         Cplx& eig,
          Args const& args = Args::global())
     {
-    auto maxiter_ = args.getSizeT("MaxIter",2);
+    auto maxiter_ = args.getSizeT("MaxIter",4);
+    auto errgoal_ = args.getReal("ErrGoal",1E-6);
+    int krydim_ = (int) args.getSizeT("MaxKrylov",6);
+    int maxsize = (int) A.size();
+    int krydim = (int) std::min(krydim_,maxsize-1);
+    if(krydim < 2) krydim = 2;
+
+    Spectra::CplxGenEigsSolver<double, Spectra::SMALLEST_REAL, BigMatrixT> eigs(&A, 2, krydim);
+    eigs.init(phi);
+    eigs.compute(maxiter_,errgoal_,Spectra::SMALLEST_REAL);
+    eig = eigs.eigenvalues();
+    phi = eigs.eigenvectors();
+
+    auto ha = args.getSizeT("DMRGh",0);
+    auto b = args.getSizeT("DMRGb",0);
+    printfln("   Loop(%d, %d) energy: ",ha,b,eig);
+    if(ha==1&&b==6) eigs.moreinfo();
+    }
+
+template <class BigMatrixT>
+void 
+arnoldiR(BigMatrixT const& A, 
+         ITensor& phi,
+         Real& eig,
+         Args const& args = Args::global())
+    {
+    auto maxiter_ = args.getSizeT("MaxIter",4);
     auto errgoal_ = args.getReal("ErrGoal",1E-6);
     int krydim_ = (int) args.getSizeT("MaxKrylov",6);
     int maxsize = (int) A.size();
@@ -30,22 +58,23 @@ arnoldiR(BigMatrixT const& A,
     Spectra::GenEigsSolver<double, Spectra::SMALLEST_REAL, BigMatrixT> eigs(&A, 1, krydim);
     eigs.init(phi);
     eigs.compute(maxiter_,errgoal_,Spectra::SMALLEST_REAL);
-    // std::cout << "Info: " << eigs.info() << std::endl;
-    auto eig = eigs.eigenvalues();
+    auto eigo = eigs.eigenvalues();
     phi = eigs.eigenvectors();
 
-    if(std::fabs(eig.imag()) > 1E-14) printf("   Arnoldi reports energy.imag = %.4e\n",eig.imag());
-    if(isComplex(phi))
+    auto ha = args.getSizeT("DMRGh",0);
+    auto b = args.getSizeT("DMRGb",0);
+    printfln("   Loop(%d, %d) energy: ",ha,b,eig);
+    if(eigo.imag() != 0.)
     {
-      auto ha = args.getSizeT("DMRGh",0);
-      auto b = args.getSizeT("DMRGb",0);
-      printf("   Arnoldi ComplexVector (%d, %d), take real part.\n",ha,b);
-      phi.takeReal();
-      phi /= norm(phi);
+      printf("   --------------------MoreInfo--------------------\n");
+      // std::cout << "   Info: " << eigs.info() << std::endl;
+      printf("   Arnoldi(%d, %d) reports energy.imag = %.4e\n",ha,b,eig.imag());
+      printf("   Arnoldi take conjugate pair.\n");
+      eigs.moreinfo();
+      printf("   --------------------EndMInfo--------------------\n");
     }
-    return eig.real();
+    eig = std::abs(eigo);
     }
-
 } //namespace itensor
 
 #endif

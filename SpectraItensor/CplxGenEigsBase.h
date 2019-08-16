@@ -4,8 +4,8 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef GEN_EIGS_BASE_H
-#define GEN_EIGS_BASE_H
+#ifndef CPLX_GEN_EIGS_BASE_H
+#define CPLX_GEN_EIGS_BASE_H
 
 #include <Eigen/Core>
 #include <vector>     // std::vector
@@ -18,10 +18,8 @@
 #include "Util/TypeTraits.h"
 #include "Util/SelectionRule.h"
 #include "Util/CompInfo.h"
-#include "LinAlg/UpperHessenbergQR.h"
-#include "LinAlg/DoubleShiftQR.h"
-#include "LinAlg/UpperHessenbergEigen.h"
-#include "LinAlg/Arnoldi.h"
+#include "LinAlg/CplxUpperHessenbergQR.h"
+#include "LinAlg/CplxArnoldi.h"
 
 namespace Spectra {
 
@@ -36,7 +34,7 @@ namespace Spectra {
 template < typename Scalar,
            int      SelectionRule,
            typename OpType>
-class GenEigsBase
+class CplxGenEigsBase
 {
 private:
     typedef Eigen::Index Index;
@@ -52,7 +50,7 @@ private:
     typedef Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic> ComplexMatrix;
     typedef Eigen::Matrix<Complex, Eigen::Dynamic, 1> ComplexVector;
 
-    typedef Arnoldi<Scalar, OpType> ArnoldiFac;
+    typedef CplxArnoldi<Scalar, OpType> ArnoldiFac;
 
 protected:
     const Index   m_n;         // dimension of matrix A
@@ -76,12 +74,6 @@ private:
     const Scalar  m_eps;       // the machine precision, ~= 1e-16 for the "double" type
     const Scalar  m_eps23;     // m_eps^(2/3), used to test the convergence
 
-    // Real Ritz values calculated from UpperHessenbergEigen have exact zero imaginary part
-    // Complex Ritz values have exact conjugate pairs
-    // So we use exact tests here
-    static bool is_complex(const Complex& v) { return v.imag() != Scalar(0); }
-    static bool is_conj(const Complex& v1, const Complex& v2) { return v1 == Eigen::numext::conj(v2); }
-
     // Implicitly restarted Arnoldi factorization
     void restart(Index k)
     {
@@ -90,43 +82,14 @@ private:
         if(k >= m_ncv)
             return;
 
-        DoubleShiftQR<Scalar> decomp_ds(m_ncv);
-        UpperHessenbergQR<Scalar> decomp_hb(m_ncv);
-        Matrix Q = Matrix::Identity(m_ncv, m_ncv);
+        CplxUpperHessenbergQR<Scalar> decomp_hb(m_ncv);
+        ComplexMatrix Q = ComplexMatrix::Identity(m_ncv, m_ncv);
 
-        for(Index i = k; i < m_ncv; i++)
+        for(Index i = k; i < m_ncv; i++)//TODO
         {
-            if(is_complex(m_ritz_val[i]) && is_conj(m_ritz_val[i], m_ritz_val[i + 1]))
-            {
-                // H - mu * I = Q1 * R1
-                // H <- R1 * Q1 + mu * I = Q1' * H * Q1
-                // H - conj(mu) * I = Q2 * R2
-                // H <- R2 * Q2 + conj(mu) * I = Q2' * H * Q2
-                //
-                // (H - mu * I) * (H - conj(mu) * I) = Q1 * Q2 * R2 * R1 = Q * R
-                const Scalar s = Scalar(2) * m_ritz_val[i].real();
-                const Scalar t = norm(m_ritz_val[i]);
-
-                decomp_ds.compute(m_fac.matrix_H(), s, t);
-
-                // Q -> Q * Qi
-                decomp_ds.apply_YQ(Q);
-                // H -> Q'HQ
-                // Matrix Q = Matrix::Identity(m_ncv, m_ncv);
-                // decomp_ds.apply_YQ(Q);
-                // m_fac_H = Q.transpose() * m_fac_H * Q;
-                m_fac.compress_H(decomp_ds);
-
-                i++;
-            } else {
-                // QR decomposition of H - mu * I, mu is real
-                decomp_hb.compute(m_fac.matrix_H(), m_ritz_val[i].real());
-
-                // Q -> Q * Qi
-                decomp_hb.apply_YQ(Q);
-                // H -> Q'HQ = RQ + mu * I
-                m_fac.compress_H(decomp_hb);
-            }
+          // QR decomposition of H - mu * I
+          decomp_hb.compute(m_fac.matrix_H(), Q, m_ritz_val[i]);
+          m_fac.update_H(decomp_hb.updatedH());
         }
 
         m_fac.compress_V(Q);
@@ -163,26 +126,16 @@ private:
         else if(nev_new == 1 && m_ncv > 3)
             nev_new = 2;
 
-        if(nev_new > m_ncv - 2)
-            nev_new = m_ncv - 2;
-
-        // Increase nev by one if ritz_val[nev - 1] and
-        // ritz_val[nev] are conjugate pairs
-        if(is_complex(m_ritz_val[nev_new - 1]) &&
-           is_conj(m_ritz_val[nev_new - 1], m_ritz_val[nev_new]))
-        {
-            nev_new++;
-        }
-
         return nev_new;
     }
 
     // Retrieves and sorts Ritz values and Ritz vectors
     void retrieve_ritzpair()
     {
-        UpperHessenbergEigen<Scalar> decomp(m_fac.matrix_H());
-        const ComplexVector& evals = decomp.eigenvalues();
-        ComplexMatrix evecs = decomp.eigenvectors();
+        Eigen::ComplexEigenSolver<ComplexMatrix> ces;
+        ces.compute(m_fac.matrix_H());
+        ComplexMatrix evecs = ces.eigenvectors();
+        ComplexVector evals = ces.eigenvalues();
 
         SortEigenvalue<Complex, SelectionRule> sorting(evals.data(), evals.size());
         std::vector<int> ind = sorting.index();
@@ -265,7 +218,7 @@ protected:
 public:
     /// \cond
 
-    GenEigsBase(OpType const* op, Index nev, Index ncv) :
+    CplxGenEigsBase(OpType const* op, Index nev, Index ncv) :
         m_n(op->size()),
         m_nev(nev),
         m_ncv(ncv > m_n ? m_n : ncv),
@@ -277,17 +230,17 @@ public:
         m_eps(Eigen::NumTraits<Scalar>::epsilon()),
         m_eps23(Eigen::numext::pow(m_eps, Scalar(2.0) / 3))
     {
-        if(nev < 1 || nev > m_n - 2)
-            throw std::invalid_argument("nev must satisfy 1 <= nev <= n - 2, n is the size of matrix");
+        if(nev < 1)
+            throw std::invalid_argument("nev must be possitive");
 
-        if(ncv < nev + 2 || ncv > m_n)
-            throw std::invalid_argument("ncv must satisfy nev + 2 <= ncv <= n, n is the size of matrix");
+        if(ncv < nev + 1 || ncv > m_n)
+            throw std::invalid_argument("ncv must satisfy nev +1 <= ncv <= n, n is the size of matrix");
     }
 
     ///
     /// Virtual destructor
     ///
-    virtual ~GenEigsBase() {}
+    virtual ~CplxGenEigsBase() {}
 
     /// \endcond
 
@@ -336,7 +289,7 @@ public:
     ///                   **sort** the final result, and the **selection** rule
     ///                   (e.g. selecting the largest or smallest eigenvalues in the
     ///                   full spectrum) is specified by the template parameter
-    ///                   `SelectionRule` of GenEigsSolver.
+    ///                   `SelectionRule` of CplxGenEigsSolver.
     ///
     /// \return Number of converged eigenvalues.
     ///
@@ -403,15 +356,18 @@ public:
     itensor::ITensor eigenvectors() const
     {
         ComplexVector rv = m_ritz_vec.col(0);
-        auto res = m_fac.matrix_V()[0] * rv(0).real();
+        auto res = m_fac.matrix_V()[0] * rv(0);
         for(Index i = 1; i < rv.size(); i++)
         {
-          res += m_fac.matrix_V()[i] * rv(i).real();
+          res += m_fac.matrix_V()[i] * rv(i);
         }
 
         return res;
     }
     
+    ///
+    /// MoreInfo, after call this function, Arnoldi is destroyed.
+    ///
     void moreinfo()
     {
         std::cout << "Arnoldi Ham:\n" << m_fac.matrix_H() << std::endl;
@@ -424,4 +380,4 @@ public:
 
 } // namespace Spectra
 
-#endif // GEN_EIGS_BASE_H
+#endif // CPLX_GEN_EIGS_BASE_H

@@ -4,17 +4,16 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef ARNOLDI_H
-#define ARNOLDI_H
+#ifndef CPLX_ARNOLDI_H
+#define CPLX_ARNOLDI_H
 
 #include <Eigen/Core>
 #include <cmath>      // std::sqrt
 #include <stdexcept>  // std::invalid_argument
 #include <sstream>    // std::stringstream
+#include <complex>
 
 #include "../Util/TypeTraits.h"
-#include "UpperHessenbergQR.h"
-#include "DoubleShiftQR.h"
 
 namespace Spectra {
 
@@ -27,16 +26,16 @@ namespace Spectra {
 // e: [0, ..., 0, 1]
 // V and H are allocated of dimension m, so the maximum value of k is m
 template <typename Scalar, typename OpType>
-class Arnoldi
+class CplxArnoldi
 {
 private:
     typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-    typedef Eigen::Map<Matrix> MapMat;
-    typedef Eigen::Map<Vector> MapVec;
-    typedef Eigen::Map<const Matrix> MapConstMat;
-    typedef Eigen::Map<const Vector> MapConstVec;
+    typedef std::complex<Scalar> Complex;
+    typedef Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic> ComplexMatrix;
+    typedef Eigen::Matrix<Complex, Eigen::Dynamic, 1> ComplexVector;
+    typedef Eigen::Map<ComplexVector> MapVec;
+    typedef Eigen::Map<const ComplexVector> MapConstVec;
+    typedef const Eigen::Ref<const ComplexMatrix> ConstGenericMatrix;
     typedef std::vector<itensor::ITensor> Tv;
     typedef itensor::ITensor Ten;
 
@@ -48,7 +47,7 @@ protected:
     Index       m_k;          // current dimension of subspace V
 
     Tv m_fac_V;           // V matrix in the Arnoldi factorization
-    Matrix m_fac_H;           // H matrix in the Arnoldi factorization
+    ComplexMatrix m_fac_H;    // H matrix in the Arnoldi factorization
     Ten m_fac_f;           // residual in the Arnoldi factorization
     Scalar m_beta;            // ||f||, B-norm of f
 
@@ -63,7 +62,7 @@ protected:
         using std::sqrt;
 
         const Scalar thresh = m_eps * sqrt(Scalar(m_n));
-        Vector Vf(lenv);
+        ComplexVector Vf(lenv);
         for(Index iter = 0; iter < 5; iter++)
         {
             // Randomly generate a new vector and orthogonalize it against V
@@ -71,7 +70,7 @@ protected:
             // f <- f - V * V'Bf, so that f is orthogonal to V in B-norm
             for(Index i = 0; i < lenv; i++)
             {
-              Vf[i] = elt(dag(V[i])*f);
+              Vf[i] = eltC(dag(V[i])*f);
             }
             for(Index i = 0; i < lenv; i++)
             {
@@ -88,17 +87,17 @@ protected:
     }
 
 public:
-    Arnoldi(OpType const* op, Index m) :
+    CplxArnoldi(OpType const* op, Index m) :
         m_op(*op), m_n(m_op.size()), m_m(m), m_k(0),
         m_near_0(TypeTraits<Scalar>::min() * Scalar(10)),
         m_eps(Eigen::NumTraits<Scalar>::epsilon())
     {}
 
-    virtual ~Arnoldi() {}
+    virtual ~CplxArnoldi() {}
 
     // Const-reference to internal structures
     const Tv& matrix_V() const { return m_fac_V; }
-    const Matrix& matrix_H() const { return m_fac_H; }
+    const ComplexMatrix& matrix_H() const { return m_fac_H; }
     const Ten& vector_f() const { return m_fac_f; }
     Scalar f_norm() const { return m_beta; }
     Index subspace_dim() const { return m_k; }
@@ -112,31 +111,39 @@ public:
         m_fac_H.setZero();
 
         // Verify the initial vector
-        m_fac_f = v0;
-        if(isComplex(m_fac_f)) m_fac_f.takeReal();
-        const Scalar v0norm = norm(m_fac_f);
+        const Scalar v0norm = norm(v0);
         if(v0norm < m_near_0)
             throw std::invalid_argument("initial residual vector cannot be zero");
 
         // Normalize
-        m_fac_V[0] = m_fac_f / v0norm;
+        m_fac_V[0] = v0 / v0norm;
 
         // Compute H and f
         m_op.product(m_fac_V[0], m_fac_f);
         op_counter++;
 
-        m_fac_H(0, 0) = elt((dag(m_fac_V[0])*m_fac_f));
+        m_fac_H(0, 0) = eltC((dag(m_fac_V[0])*m_fac_f));
         m_fac_f -= m_fac_V[0] * m_fac_H(0, 0);
 
         // In some cases f is zero in exact arithmetics, but due to rounding errors
         // it may contain tiny fluctuations. When this happens, we force f to be zero
-        Scalar max_mag = Scalar(0);//TODO
-        auto maxComp = [&max_mag](Scalar r)
+        Scalar max_mag = Scalar(0);
+        if(isComplex(m_fac_f))
         {
-          if(std::fabs(r) > max_mag) max_mag = std::fabs(r);
-        };
-        m_fac_f.visit(maxComp);
-        // std::cout << "max_mag found:" << max_mag << std::endl;
+          auto maxComp = [&max_mag](Complex r)
+          {
+            if(std::abs(r) > max_mag) max_mag = std::abs(r);
+          };
+          m_fac_f.visit(maxComp);
+        }
+        else
+        {
+          auto maxComp = [&max_mag](Scalar r)
+          {
+            if(std::fabs(r) > max_mag) max_mag = std::fabs(r);
+          };
+          m_fac_f.visit(maxComp);
+        }
         
         if(max_mag < m_eps)
         {
@@ -160,7 +167,7 @@ public:
         if(from_k > m_k)
         {
             std::stringstream msg;
-            msg << "Arnoldi: from_k (= " << from_k <<
+            msg << "CplxArnoldi: from_k (= " << from_k <<
                    ") is larger than the current subspace dimension (= " <<
                    m_k << ")";
             throw std::invalid_argument(msg.str());
@@ -169,7 +176,7 @@ public:
         const Scalar beta_thresh = m_eps * sqrt(Scalar(m_n));
 
         // Pre-allocate vectors
-        Vector Vf(to_m);
+        ComplexVector Vf(to_m);
         Ten w;
 
         // Keep the upperleft k x k submatrix of H and set other elements to 0
@@ -193,11 +200,11 @@ public:
             {
               m_fac_V[i] = m_fac_f / m_beta; // The (i+1)-th column
             }
-            else
+            else // expand_basis may failed in some cases
             {
               m_fac_V[i] = Scalar(0) * m_fac_f;
               m_beta = Scalar(0);
-            }
+            }  
 
             // Note that H[i+1, i] equals to the unrestarted beta
             m_fac_H(i, i - 1) = restart ? Scalar(0) : m_beta;
@@ -212,7 +219,7 @@ public:
             // h <- V'Bw
             for(Index hl = 0; hl < i1; hl++) // First i+1 columns of m_fac_V
             {
-              h[hl] = elt(dag(m_fac_V[hl])*w);
+              h[hl] = eltC(dag(m_fac_V[hl])*w);
             }
 
             // f <- w - V * h
@@ -230,7 +237,7 @@ public:
             // whether V'B(f/||f||) ~= 0
             for(Index hl = 0; hl < i1; hl++)
             {
-              Vf[hl] = elt(dag(m_fac_V[hl])*m_fac_f);
+              Vf[hl] = eltC(dag(m_fac_V[hl])*m_fac_f);
             }
             Scalar ortho_err = Vf.head(i1).cwiseAbs().maxCoeff();
             // If not, iteratively correct the residual
@@ -261,7 +268,7 @@ public:
 
                 for(Index hl = 0; hl < i1; hl++)
                 {
-                  Vf[hl] = elt(dag(m_fac_V[hl])*m_fac_f);
+                  Vf[hl] = eltC(dag(m_fac_V[hl])*m_fac_f);
                 }
                 ortho_err = Vf.head(i1).cwiseAbs().maxCoeff();
                 count++;
@@ -272,17 +279,11 @@ public:
         m_k = to_m;
     }
 
-    // Apply H -> Q'HQ, where Q is from a double shift QR decomposition
-    void compress_H(const DoubleShiftQR<Scalar>& decomp)
+    // Update modified H -> Q'HQ from an upper Hessenberg QR decomposition
+    void update_H(ConstGenericMatrix& uph)
     {
-        decomp.matrix_QtHQ(m_fac_H);
-        m_k -= 2;
-    }
-
-    // Apply H -> Q'HQ, where Q is from an upper Hessenberg QR decomposition
-    void compress_H(const UpperHessenbergQR<Scalar>& decomp)
-    {
-        decomp.matrix_QtHQ(m_fac_H);
+        if(uph.size() != m_fac_H.size()) throw std::invalid_argument("CplxArnoldi: update matrix error!");
+        std::copy(uph.data(), uph.data() + uph.size(), m_fac_H.data());
         m_k--;
     }
 
@@ -291,7 +292,7 @@ public:
     // Only need to update the first k+1 columns of V
     // The first (m - k + i) elements of the i-th column of Q are non-zero,
     // and the rest are zero
-    void compress_V(const Matrix& Q)
+    void compress_V(const ComplexMatrix& Q)
     {
         Tv Vs(m_k + 1);
         for(Index i = 0; i < m_k; i++)
@@ -322,4 +323,4 @@ public:
 
 } // namespace Spectra
 
-#endif // ARNOLDI_H
+#endif // CPLX_ARNOLDI_H

@@ -1,3 +1,5 @@
-Port from https://github.com/yixuan/spectra
-NonSymRealEigsSolver working with itensor LocalMPO class, it can only return Ground state of a LocalMPO object. Current version only works with real H and psi.
-Note: DMRG is not compatible with non-Hermitian systems due to the wrong effective Hamiltonian which should be constructed from both right psi_r and left psi_l wave-functions but psi_l is not simply dag(psi_r). So it's not possible to solve non-Hermitian systems right now.
+GenEigsSolver Ported from https://github.com/yixuan/spectra
+An additional CplxGenEigsSolver based on GenEigsSolver.
+GenEigsSolver working with itensor LocalMPO class, it can only return Ground state of a LocalMPO object (both H and psi must be real). For complex H or psi, use cplxdmrg which calls CplxGenEigsSolver.
+Note: DMRG may not convergent for non-Hermitian systems.
+Notes: itensor useing matrix notation which is not common with usual notation, if you need right eigenvector of H, prepare AutoMPO from dag(H) instead of H itself.
