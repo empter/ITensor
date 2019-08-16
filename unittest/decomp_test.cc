@@ -224,6 +224,52 @@ SECTION("QN ITensor SVD")
 
     }
 
+SECTION("Polar")
+  {
+  auto i = Index(2,"i");
+  auto j = Index(2,"j");
+  auto k = Index(2,"k");
+  auto l = Index(2,"l");
+  auto A = randomITensor(i,j,k,l);
+
+  auto [U,P] = polar(A,{i,j});
+
+  auto uinds = commonInds(U,P);
+  auto [C,c] = combiner(uinds);
+
+  CHECK_CLOSE(norm(U*P-A),0.);
+
+  auto Uc = U*C;
+
+  auto UUdag = Uc*dag(prime(Uc,c));
+
+  for(auto i : range1(dim(c)))
+    CHECK_CLOSE(UUdag.elt(i,i),1.);
+  }
+
+SECTION("Polar")
+  {
+  auto i = Index(QN(),2,In,"i");
+  auto j = Index(QN(),2,In,"j");
+  auto k = Index(QN(),2,Out,"k");
+  auto l = Index(QN(),2,Out,"l");
+  auto A = randomITensor(QN(),i,j,k,l);
+
+  auto [U,P] = polar(A,{i,j});
+
+  auto uinds = commonInds(U,P);
+  auto [C,c] = combiner(uinds);
+
+  CHECK_CLOSE(norm(U*P-A),0.);
+
+  auto Uc = U*C;
+
+  auto UUdag = Uc*dag(prime(Uc,c));
+
+  for(auto i : range1(dim(c)))
+    CHECK_CLOSE(UUdag.elt(i,i),1.);
+  }
+
 SECTION("QN ITensor denmatDecomp")
     {
     SECTION("Test 1")
@@ -727,4 +773,37 @@ SECTION("Exp Hermitian")
         }
     }
 
+SECTION("Eigen")
+    {
+    auto i = Index(2,"i"),
+         j = Index(2,"j"),
+         k = Index(2,"k");
+    auto I = IndexSet(i,j,k);
+    auto Ip = prime(I);
+
+    SECTION("Case 1")
+      {
+      auto A = randomITensor({Ip,I});
+
+      auto [P,D] = eigen(A,{"Tags=","test"});
+
+      auto d = commonIndex(P,D);
+
+      CHECK(hasTags(d,"test"));
+      CHECK_CLOSE(norm(A*P - prime(P)*D),0.);
+      }
+
+    SECTION("Case 2")
+      {
+      auto A = randomITensor({I,Ip});
+
+      auto [P,D] = eigen(A,{"Tags=","test"});
+
+      auto d = commonIndex(P,D);
+
+      CHECK(hasTags(d,"test"));
+      CHECK_CLOSE(norm(A*P - prime(P)*D),0.);
+      }
+
+    }
 }

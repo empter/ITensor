@@ -268,6 +268,20 @@ svd(ITensor const& AA, IndexSet const& Uis,
     return std::tuple<ITensor,ITensor,ITensor>(U,S,V);
     }
 
+std::tuple<ITensor,ITensor>
+polar(ITensor const& T,
+      IndexSet const& Uis)
+    {
+    auto [U,S,V] = svd(T,Uis);
+    auto u = commonIndex(S,U);
+    auto v = commonIndex(S,V);
+    auto Vis = uniqueInds(inds(V),{v});
+    auto Vp = prime(V,Vis)*delta(v,u);
+    auto Q = U*Vp;
+    auto P = dag(Vp)*S*V;
+    return std::tuple<ITensor,ITensor>(Q,P);
+    }
+
 // output: truncerr,docut_lower,docut_upper,ndegen_below
 std::tuple<Real,Real,Real,int>
 truncate(Vector & P,
@@ -541,15 +555,17 @@ factor(ITensor const& T,
     return std::tuple<ITensor,ITensor>(A,B);
     }
 
-//TODO: create a tag convention
 template<typename value_type>
-void 
+void
 eigDecompImpl(ITensor T, 
               ITensor & L, 
               ITensor & R, 
               ITensor & D,
               Args const& args)
     {
+    auto itagset = getTagSet(args,"Tags","Link");
+    // New index listing eigenvectors
+    Index newmid;
     if(not hasQNs(T))
         {
         auto full = args.getBool("FullDecomp",false);
@@ -565,6 +581,7 @@ eigDecompImpl(ITensor T,
 
         //Do the diagonalization
         auto MM = toMatRefc<value_type>(T,prime(lind),lind);
+
         Vector Dr, Di;
         Matrix Rr, Ri;
         Matrix Lr, Li;
@@ -577,7 +594,7 @@ eigDecompImpl(ITensor T,
             eigDecomp(MM,Lr,Li,Dr,Di,Rr,Ri);
             }
 
-        auto newmid = Index(dim(lind));
+        newmid = Index(dim(lind),itagset);
 
         //put right eigenvectors into an ITensor
         if(norm(Ri) > 1E-16*norm(Rr))
@@ -791,11 +808,22 @@ eigen(ITensor const& T,
         if(I.primeLevel() == 0) colinds.push_back(I);
         }
     auto [comb,cind] = combiner(std::move(colinds),args);
-    (void)cind;
 
     auto Tc = prime(comb) * T * comb; 
 
+    // The version where Tc is ordered
+    // {cind,prime(cind)} does not work,
+    // here we will explicitly permute the
+    // ITensor so the indices are ordered
+    // {prime(cind),cind}.
+    // This is not great since it is an
+    // extra reordering of the data,
+    // look into fixing eigen properly.
+    if(inds(Tc)(1) != prime(cind))
+      Tc = permute(Tc,{prime(cind),cind});
+
     ITensor L;
+    Index eigvec_ind;
     if(isComplex(T))
         {
         eigDecompImpl<Cplx>(Tc,L,V,D,args);
@@ -805,7 +833,7 @@ eigen(ITensor const& T,
         eigDecompImpl<Real>(Tc,L,V,D,args);
         }
 
-    V = V * comb;
+    V *= comb;
     }
 
 std::tuple<ITensor,ITensor>
