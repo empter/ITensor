@@ -29,7 +29,7 @@ arnoldiR(BigMatrixT const& A,
     int krydim = (int) std::min(krydim_,maxsize-1);
     if(krydim < 2) krydim = 2;
 
-    Spectra::CplxGenEigsSolver<double, Spectra::SMALLEST_REAL, BigMatrixT> eigs(&A, 2, krydim);
+    Spectra::CplxGenEigsSolver<double, Spectra::SMALLEST_REAL, BigMatrixT> eigs(&A, 1, krydim);
     eigs.init(phi);
     eigs.compute(maxiter_,errgoal_,Spectra::SMALLEST_REAL);
     eig = eigs.eigenvalues();
@@ -37,8 +37,11 @@ arnoldiR(BigMatrixT const& A,
 
     auto ha = args.getSizeT("DMRGh",0);
     auto b = args.getSizeT("DMRGb",0);
+    printf("   --------------------MoreInfo--------------------\n");
     printfln("   Loop(%d, %d) energy: ",ha,b,eig);
-    if(ha==1&&b==6) eigs.moreinfo();
+    eigs.moreinfo();
+    // if(ha==1&&b==6) eigs.moreinfo();
+    printf("   --------------------EndMInfo--------------------\n");
     }
 
 template <class BigMatrixT>
@@ -68,12 +71,12 @@ arnoldiR(BigMatrixT const& A,
     {
       printf("   --------------------MoreInfo--------------------\n");
       // std::cout << "   Info: " << eigs.info() << std::endl;
-      printf("   Arnoldi(%d, %d) reports energy.imag = %.4e\n",ha,b,eig.imag());
+      printf("   Arnoldi(%d, %d) reports energy.imag = %.4e\n",ha,b,eigo.imag());
       printf("   Arnoldi take conjugate pair.\n");
       eigs.moreinfo();
       printf("   --------------------EndMInfo--------------------\n");
     }
-    eig = std::abs(eigo);
+    eig = eigo.real();
     }
 } //namespace itensor
 

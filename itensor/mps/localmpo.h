@@ -483,7 +483,7 @@ position(int b, MPS const& psi)
     setRHlim(b+nc_); //not redundant since RHlim_ could be < b+nc_
 
 #ifdef DEBUG
-    if(nc_ != 2 || nc_ != 1)
+    if(nc_ <1 || nc_ > 3)
         {
         Error("LocalOp only supports 1 or 2 center sites currently");
         }
