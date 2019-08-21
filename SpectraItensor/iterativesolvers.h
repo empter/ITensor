@@ -35,13 +35,13 @@ arnoldiR(BigMatrixT const& A,
     eig = eigs.eigenvalues();
     phi = eigs.eigenvectors();
 
-    auto ha = args.getSizeT("DMRGh",0);
-    auto b = args.getSizeT("DMRGb",0);
-    printf("   --------------------MoreInfo--------------------\n");
-    printfln("   Loop(%d, %d) energy: ",ha,b,eig);
-    eigs.moreinfo();
-    // if(ha==1&&b==6) eigs.moreinfo();
-    printf("   --------------------EndMInfo--------------------\n");
+    // auto ha = args.getSizeT("DMRGh",0);
+    // auto b = args.getSizeT("DMRGb",0);
+    // printf("   --------------------MoreInfo--------------------\n");
+    // printfln("   Loop(%d, %d) energy: ",ha,b,eig);
+    // eigs.moreinfo();
+    // // if(ha==1&&b==6) eigs.moreinfo();
+    // printf("   --------------------EndMInfo--------------------\n");
     }
 
 template <class BigMatrixT>
