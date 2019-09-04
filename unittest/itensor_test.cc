@@ -2530,6 +2530,149 @@ SECTION("ITensor Negation")
         }
     }
 
+SECTION("ITensor partial direct sum")
+  {
+  SECTION("No QNs")
+    {
+    auto a = Index(2,"a"),
+         b = Index(2,"b"),
+         i = Index(2,"i"),
+         j = Index(2,"j");
+
+    auto A = randomITensor(a,b,i);
+    auto B = randomITensor(a,b,j);
+
+    // Version accepting an index on A and an index on B to be direct summed
+    // Here we create a new ITensor C with indices {a,b,i+j}
+    // Indices that are not specified must be shared by A and B
+    auto [C,ij] = directSum(A,B,i,j,{"Tags=","i+j"});
+
+    CHECK_CLOSE(C.elt(a=1,b=1,ij=1),A.elt(a=1,b=1,i=1));
+    CHECK_CLOSE(C.elt(a=1,b=1,ij=dim(i)+1),B.elt(a=1,b=1,j=1));
+    }
+  SECTION("QNs")
+    {
+    auto a = Index(QN(-1),2,
+                   QN(0),2,
+                   QN(+1),2,"a");
+
+    auto b = Index(QN(-1),2,
+                   QN(0),2,
+                   QN(+1),2,"b");
+
+    auto i = Index(QN(-1),2,
+                   QN(0),2,
+                   QN(+1),2,"i");
+
+    auto j = Index(QN(-1),2,
+                   QN(0),2,
+                   QN(+1),2,"j");
+
+    auto A = randomITensor(QN(0),a,b,dag(i));
+    auto B = randomITensor(QN(0),a,b,dag(j));
+
+    // Version accepting an index on A and an index on B to be direct summed
+    // Here we create a new ITensor C with indices {a,b,i+j}
+    // Indices that are not specified must be shared by A and B
+    auto [C,ij] = directSum(A,B,i,j,{"Tags=","i+j"});
+
+    CHECK_CLOSE(C.elt(a=1,b=1,ij=1),A.elt(a=1,b=1,i=1));
+    CHECK_CLOSE(C.elt(a=1,b=1,ij=dim(i)+1),B.elt(a=1,b=1,j=1));
+    }
+  }
+
+SECTION("ITensor toDense function")
+  {
+  SECTION("No QNs")
+    {
+    auto i = Index(3,"i"),
+         j = Index(3,"j"),
+         k = Index(3,"k");
+
+    SECTION("General Diag")
+      {
+      auto v = vector<Real>({1.0,2.0,3.0});
+      auto A = diagITensor(v,i,j,k);
+      auto B = toDense(A);
+      CHECK(typeOf(B) == Type::DenseReal);
+      for(auto iv : range1(i))
+        for(auto jv : range1(j))
+          for(auto kv : range1(k))
+            CHECK(elt(A,i=iv,j=jv,k=kv) == elt(B,i=iv,j=jv,k=kv));
+      }
+    SECTION("Delta")
+      {
+      auto A = delta(i,j,k);
+      auto B = toDense(A);
+      CHECK(typeOf(B) == Type::DenseReal);
+      for(auto iv : range1(i))
+        for(auto jv : range1(j))
+          for(auto kv : range1(k))
+            CHECK(elt(A,i=iv,j=jv,k=kv) == elt(B,i=iv,j=jv,k=kv));
+      }
+    }
+
+  SECTION("QNs")
+    {
+    auto i = Index(QN(-1),2,
+                   QN(0),2,
+                   QN(+1),2,"i");
+    auto j = Index(QN(-1),2,
+                   QN(0),2,
+                   QN(+1),2,"j");
+    auto k = Index(QN(-2),2,
+                   QN(0),2,
+                   QN(+2),2,"k");
+
+    auto is = IndexSet(i,j,dag(k));
+
+    SECTION("General Diag")
+      {
+      auto d = vector<Vector>(3);
+      d[0] = Vector(2);
+      d[0](0) = 1.0;
+      d[0](1) = 2.0;
+      d[1] = Vector(2);
+      d[1](0) = 3.0;
+      d[1](1) = 4.0;
+      d[2] = Vector(2);
+      d[2](0) = 5.0;
+      d[2](1) = 6.0;
+
+      // Helper function to make a diagITensor with QDiag storage
+      // A vector of containers is supplied, one for each block
+      // in the QDiag storage
+      auto Dstore = QDiagReal(is);
+      auto Nblocks = nblock(is[1]);
+      for(auto n : range(Nblocks))
+        {
+        auto ind = IntArray(length(is),n);
+        auto pD = getBlock(Dstore,is,ind);
+        if( d[n].size() != pD.size() ) Error("Block size and vector size must match");
+        auto Dref = makeVecRef(pD.data(),pD.size());
+        Dref &= d[n];
+        }
+      auto A = ITensor(is,move(Dstore));
+
+      auto B = toDense(A);
+      CHECK(typeOf(B) == Type::QDenseReal);
+      for(auto iv : range1(i))
+        for(auto jv : range1(j))
+          for(auto kv : range1(k))
+            CHECK(elt(A,i=iv,j=jv,k=kv) == elt(B,i=iv,j=jv,k=kv));
+      }
+    SECTION("General Delta")
+      {
+      auto A = delta(is);
+      auto B = toDense(A);
+      CHECK(typeOf(B) == Type::QDenseReal);
+      for(auto iv : range1(i))
+        for(auto jv : range1(j))
+          for(auto kv : range1(k))
+            CHECK(elt(A,i=iv,j=jv,k=kv) == elt(B,i=iv,j=jv,k=kv));
+      }
+    }
+  }
 
 } //TEST_CASE("ITensor")
 

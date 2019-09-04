@@ -530,6 +530,18 @@ operator/(ITensor A, ITensor const& B);
 ITensor
 operator/(ITensor const& A, ITensor && B);
 
+// Partial direct sum of ITensors A and B
+// over the specified indices
+std::tuple<ITensor,IndexSet>
+directSum(ITensor const& A, ITensor const& B,
+          IndexSet const& I, IndexSet const& J,
+          Args const& args = Args::global());
+
+std::tuple<ITensor,Index>
+directSum(ITensor const& A, ITensor const& B,
+          Index const& i, Index const& j,
+          Args const& args = Args::global());
+
 //
 // ITensor tag functions
 //
@@ -706,6 +718,10 @@ hasIndex(ITensor const& T,
 bool
 hasInds(ITensor const& T,
         IndexSet const& ismatch);
+
+Arrow
+dir(ITensor const& T,
+    Index const& i);
 
 template<typename... Inds>
 bool
@@ -987,6 +1003,9 @@ flux(ITensor const& T);
 
 bool
 hasQNs(ITensor const& T);
+
+ITensor
+toDense(ITensor T);
 
 ITensor
 removeQNs(ITensor T);
