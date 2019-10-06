@@ -200,9 +200,10 @@ public:
             {
               m_fac_V[i] = m_fac_f / m_beta; // The (i+1)-th column
             }
-            else // expand_basis may failed in some cases
+            else // expand_basis may failed in some cases, use random instead
             {
-              m_fac_V[i] = Scalar(0) * m_fac_f;
+              // m_fac_V[i] = Scalar(0) * m_fac_f;
+              m_fac_V[i] = m_fac_f.randomize();
               m_beta = Scalar(0);
             }  
 

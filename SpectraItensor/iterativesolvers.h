@@ -63,10 +63,10 @@ arnoldiR(BigMatrixT const& A,
     eigs.compute(maxiter_,errgoal_,Spectra::SMALLEST_REAL);
     auto eigo = eigs.eigenvalues();
     phi = eigs.eigenvectors();
-
-    auto ha = args.getSizeT("DMRGh",0);
-    auto b = args.getSizeT("DMRGb",0);
-    printfln("   Loop(%d, %d) energy: ",ha,b,eig);
+    
+    // auto ha = args.getSizeT("DMRGh",0);
+    // auto b = args.getSizeT("DMRGb",0);
+    // printfln("   Loop(%d, %d) energy: ",ha,b,eigo);
     if(eigo.imag() != 0.)
     {
       printf("   --------------------MoreInfo--------------------\n");
