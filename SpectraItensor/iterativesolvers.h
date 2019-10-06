@@ -64,8 +64,8 @@ arnoldiR(BigMatrixT const& A,
     auto eigo = eigs.eigenvalues();
     phi = eigs.eigenvectors();
     
-    // auto ha = args.getSizeT("DMRGh",0);
-    // auto b = args.getSizeT("DMRGb",0);
+    auto ha = args.getSizeT("DMRGh",0);
+    auto b = args.getSizeT("DMRGb",0);
     // printfln("   Loop(%d, %d) energy: ",ha,b,eigo);
     if(eigo.imag() != 0.)
     {
