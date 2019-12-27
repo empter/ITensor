@@ -1,0 +1,17 @@
+input
+{
+N = 21
+dB = 3
+gamma = 0.2
+delta = 2.0
+V0 = 0.0
+beta = 3.0
+halfU = 0.5
+nsweeps = 250
+tau=0.02
+sweeps
+    {
+    maxm  minm  cutoff  niter  noise
+    400    1    1E-14   40      1E-15
+    }
+}

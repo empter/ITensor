@@ -1,0 +1,21 @@
+input
+{
+N = 45
+dB = 4
+gamma = 0.4
+delta = 2.0
+V0 = 1.0
+beta = 3.0
+halfU = 2.0
+pass = 1
+Iter = 20
+ErrG = 1E-12
+EngErrG = 1E-8
+nsweeps = 16
+sweeps
+    {
+    maxm  minm  cutoff  niter  noise
+    200    1    0       2      0
+    200    1    1E-14   3      0
+    }
+}
