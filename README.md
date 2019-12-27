@@ -8,3 +8,7 @@ automatically find each other and contract. This makes it easy to transcribe
 tensor network diagrams into correct, efficient code.
 
 Installation instructions can be found in the [INSTALL](INSTALL.md) file.
+
+Benchmark expamles of non_Hermitian DMRG and TDVP methods can be found uunder DEMO folder.
+Under Demo/DMRG, run `make && ./ndmrg argv_dmrg.txt`
+Under Demo/TDVP, run `make && ./ntdvp argv_tdvp.txt`
